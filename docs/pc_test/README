@@ -1,0 +1,4 @@
+
+./pg -b 1 -c 1 -i logic-1-1 -o /tmp/gg 
+
+

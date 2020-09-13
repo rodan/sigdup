@@ -1,0 +1,13 @@
+[global]
+sigrok version=0.5.1
+
+[device 1]
+capturefile=logic-1
+total probes=16
+samplerate=2 MHz
+total analog=0
+probe1=rx
+probe2=tx
+probe3=rx irq
+probe4=^busy
+unitsize=2

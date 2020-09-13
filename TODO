@@ -1,0 +1,7 @@
+ pc application:
+  - import the pulseview-generated data and converts it into a 'dup' file containing channel states and timing information
+
+ microcontroller:
+  - zmodem implementation for the transfer of the dup file from pc
+  - scheduling of signal transitions based on the dup file
+
