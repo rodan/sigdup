@@ -11,7 +11,6 @@
 #define  BLOCK_SIZE_1BYTE  1
 #define BLOCK_SIZE_2BYTES  2
 
-// cp from infile to outfile and detect holes
 int main(int argc, char *argv[])
 {
     int fdin, fdout;

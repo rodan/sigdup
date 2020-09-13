@@ -1,0 +1,11 @@
+build
+build/*
+qa/*
+tags
+resources.c
+.*.swp
+*.o
+*~
+*.patch
+*.lck
+
