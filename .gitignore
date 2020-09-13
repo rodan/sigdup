@@ -8,4 +8,4 @@ resources.c
 *~
 *.patch
 *.lck
-
+external/*

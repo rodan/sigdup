@@ -1,10 +1,4 @@
 
-/*
-    reference MSP430 library for an HI6000 EDGE probe
-
-    tweak the baud rate in config.h
-*/
-
 #include <msp430.h>
 #include <stdio.h>
 #include <string.h>
