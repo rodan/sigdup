@@ -30,7 +30,7 @@ void timer_a2_init(void)
     TA2CCTL1 = CCIE;
 
     timer_a2_trigger_schedule = 0;
-    timer_a2_trigger_next = -1;
+    timer_a2_trigger_next = 0;
     timer_a2_last_event = TIMER_A2_EVENT_NONE;
     timer_a2_systime = 0;
 }
@@ -107,7 +107,7 @@ void timer_a2_scheduler_handler(void)
 {
     uint16_t c;
     uint16_t shift;
-    uint32_t schedule_trigger_next = -1;
+    uint32_t schedule_trigger_next = 0;
 
     if (timer_a2_trigger_schedule) {
         for (c = 0; c < TIMER_A2_SLOTS_COUNT; c++) {
