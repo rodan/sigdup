@@ -172,7 +172,7 @@ void parse_user_input(void)
     } else if (strstr(input, "sch")) {
         display_schedule();
     } else if (strstr(input, "read")) {
-        print_buf((uint8_t *)(uintptr_t) HIFRAM_ADDR, 512);
+        print_buf((uint8_t *)(uintptr_t) HIGH_FRAM_ADDR, 512);
     }
 }
 

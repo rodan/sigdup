@@ -69,8 +69,8 @@
 
 // use '-mlarge -mcode-region=lower -mdata-region=lower' as CFLAGS and LDFLAGS
 // during compilation to make sure nothing else is using the HIFRAM
-#define                 HIFRAM_ADDR  0x00010010
-#define                 HIFRAM_SIZE  0x33F00
+#define              HIGH_FRAM_ADDR  0x00010010
+#define              HIGH_FRAM_SIZE  0x33F00
 
 void check_events(void);
 

@@ -16,6 +16,7 @@
 
 volatile uint8_t port5_last_event;
 
+/*
 #if defined (__TI_COMPILER_VERSION__)
 #pragma PERSISTENT(HIGH_FRAM_START)
 uint32_t HIGH_FRAM_START =
@@ -24,7 +25,8 @@ __persistent uint32_t HIGH_FRAM_START =
 #elif defined (__GNUC__)
 __attribute__ ((section (".persistent"))) uint32_t HIGH_FRAM_START =
 #endif
-        HIFRAM_ADDR;
+        HIGH_FRAM_ADDR;
+*/
 
 uint8_t tcounter = 0;
 
@@ -111,7 +113,8 @@ static void button_55_irq(uint16_t msg)
         //sig2_off;
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, 0, TIMER_A2_EVENT_DISABLE);
         tcounter++;
-        FRAMCtl_A_write8(&tcounter, (uint8_t *)(uintptr_t)HIGH_FRAM_START, 1);
+        //FRAMCtl_A_write8(&tcounter, (uint8_t *)(uintptr_t)HIGH_FRAM_START, 1);
+        FRAMCtl_A_write8(&tcounter, (uint8_t *)HIGH_FRAM_ADDR, 1);
     } else {
         //sig2_on;
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, systime() + 100, TIMER_A2_EVENT_ENABLE);
