@@ -16,6 +16,19 @@
 
 volatile uint8_t port5_last_event;
 
+#if defined (__TI_COMPILER_VERSION__)
+#pragma PERSISTENT(FRAM_TEST_START)
+uint32_t FRAM_TEST_START =
+#elif defined (__IAR_SYSTEMS_ICC__)
+__persistent uint32_t FRAM_TEST_START =
+#elif defined (__GNUC__)
+__attribute__ ((section (".persistent"))) uint32_t FRAM_TEST_START =
+#endif
+        HIFRAM_ADDR;
+
+uint8_t tcounter = 0;
+
+
 void main_init(void)
 {
     P1OUT = 0;
@@ -97,6 +110,8 @@ static void button_55_irq(uint16_t msg)
     if (P5IN & BIT5) {
         //sig2_off;
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, 0, TIMER_A2_EVENT_DISABLE);
+        tcounter++;
+        FRAMCtl_A_write8(&tcounter, (uint8_t *)(uintptr_t)FRAM_TEST_START, 1);
     } else {
         //sig2_on;
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, systime() + 100, TIMER_A2_EVENT_ENABLE);

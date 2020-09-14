@@ -67,6 +67,9 @@
 #define              SCHEDULE_PB_55 TIMER_A2_SLOT_7
 #define              SCHEDULE_PB_56 TIMER_A2_SLOT_8
 
+#define    HIFRAM_ADDR  0x00010000
+#define    HIFRAM_SIZE  0x33FF7
+
 void check_events(void);
 
 #endif

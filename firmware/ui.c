@@ -171,6 +171,8 @@ void parse_user_input(void)
         display_menu();
     } else if (strstr(input, "sch")) {
         display_schedule();
+    } else if (strstr(input, "read")) {
+        print_buf((uint8_t *)(uintptr_t) HIFRAM_ADDR, 512);
     }
 }
 
