@@ -83,8 +83,8 @@ all: depend version.h config.h tags driverlib $(EXOUTPUT) size
 endif
 
 ifeq ($(MEMORY_MODEL),LARGE)
-CFLAGS	+= -mlarge -mcode-region=upper -mdata-region=lower
-LDFLAGS	+= -mlarge -mcode-region=upper
+CFLAGS	+= -mlarge -mcode-region=lower -mdata-region=lower
+LDFLAGS	+= -mlarge -mcode-region=lower -mdata-region=lower
 endif
 
 config.h:

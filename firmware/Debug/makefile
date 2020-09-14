@@ -200,7 +200,7 @@ all: $(OBJS) $(CMD_SRCS) $(LD_SRCS) $(GEN_CMDS)
 sigdup.out: $(OBJS) $(CMD_SRCS) $(LD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: GNU Linker'
-	"C:/ti/ccs1000/ccs/tools/compiler/msp430-gcc-9.2.0.50_win64/bin/msp430-elf-gcc-9.2.0.exe" -mhwmult=f5series -Og -g -gdwarf-3 -gstrict-dwarf -Wall -mcode-region=none -mlarge -Wl,-Map,"sigdup.map" -Wl,--gc-sections -L"C:/ti/ccs1000/ccs/ccs_base/msp430/include_gcc" -mmcu=msp430fr5994 -o"sigdup.out" $(ORDERED_OBJS)
+	"C:/ti/ccs1000/ccs/tools/compiler/msp430-gcc-9.2.0.50_win64/bin/msp430-elf-gcc-9.2.0.exe" -mhwmult=f5series -Og -ffunction-sections -fdata-sections -g -gdwarf-3 -gstrict-dwarf -Wall -fomit-frame-pointer -Wno-attributes -Wno-int-to-pointer-cast -mcode-region=lower -mlarge -Wl,-Map,"sigdup.map" -Wl,--gc-sections -L"C:/ti/ccs1000/ccs/ccs_base/msp430/include_gcc" -mmcu=msp430fr5994 -mlarge -mcode-region=lower -mdata-region=lower -o"sigdup.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 

@@ -57,18 +57,20 @@
 #define        SYS_MSG_TIMERA2_CCR1  0x80000  // timer_a2_delay_noblk_ccr1
 
 
-//#define                             TIMER_A2_SLOT_0
-//#define                             TIMER_A2_SLOT_1
-//#define                             TIMER_A2_SLOT_2
-//#define                             TIMER_A2_SLOT_3
-//#define                             TIMER_A2_SLOT_4
-//#define                             TIMER_A2_SLOT_5
-//#define                             TIMER_A2_SLOT_6
-#define              SCHEDULE_PB_55 TIMER_A2_SLOT_7
-#define              SCHEDULE_PB_56 TIMER_A2_SLOT_8
+//#define                              TIMER_A2_SLOT_0
+//#define                              TIMER_A2_SLOT_1
+//#define                              TIMER_A2_SLOT_2
+//#define                              TIMER_A2_SLOT_3
+//#define                              TIMER_A2_SLOT_4
+//#define                              TIMER_A2_SLOT_5
+//#define                              TIMER_A2_SLOT_6
+#define              SCHEDULE_PB_55  TIMER_A2_SLOT_7
+#define              SCHEDULE_PB_56  TIMER_A2_SLOT_8
 
-#define    HIFRAM_ADDR  0x00010000
-#define    HIFRAM_SIZE  0x33FF7
+// use '-mlarge -mcode-region=lower -mdata-region=lower' as CFLAGS and LDFLAGS
+// during compilation to make sure nothing else is using the HIFRAM
+#define                 HIFRAM_ADDR  0x00010010
+#define                 HIFRAM_SIZE  0x33F00
 
 void check_events(void);
 

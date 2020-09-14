@@ -10,7 +10,6 @@
 #include "config.h"
 #include "timer_a1.h"
 #include "timer_a0.h"
-//#include "uart3.h"
 
 #define     TA0_SLEEP_MS_COMPENSATION  5       // number of ticks spent setting up the timer during timer_a0_sleep()
 
