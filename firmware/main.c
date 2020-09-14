@@ -7,16 +7,14 @@
 #include "proj.h"
 #include "driverlib.h"
 #include "glue.h"
-//#include "ui.h"
+#include "ui.h"
 #include "timer_a0.h"
 #include "timer_a1.h"
 #include "timer_a2.h"
 #include "uart0.h"
 #include "version.h"
 
-volatile uint8_t port3_last_event;
 volatile uint8_t port5_last_event;
-uint32_t button_down_start;
 
 void main_init(void)
 {
@@ -27,10 +25,7 @@ void main_init(void)
     P2DIR = 0xff;
 
     P3OUT = 0;
-    P3DIR = 0xf5;
-
-    // IRQ triggers on rising edge
-    P3IES &= ~BIT1;
+    P3DIR = 0xff;
 
     P4OUT = 0;
     P4DIR = 0xff;
@@ -38,11 +33,9 @@ void main_init(void)
     // P55 and P56 are buttons
     P5OUT = 0;
     P5DIR = 0x9f;
-
     // activate pullup
     P5OUT = 0x60;
     P5REN = 0x60;
-
     // IRQ triggers on the falling edge
     P5IES = 0x60;
 
@@ -52,22 +45,13 @@ void main_init(void)
     P7OUT = 0;
     P7DIR = 0xff;
 
-    P8DIR = 0xff;
     P8OUT = 0;
+    P8DIR = 0xff;
 
     PJOUT = 0;
     PJDIR = 0xffff;
 
-    // port init
-    //P1DIR |= BIT0 + BIT2 + BIT3 + BIT4 + BIT5;
-
     sig0_on;
-    bus_3v3_on;
-
-    // P3.0 is a jumper, make it an input
-    //P3DIR &= ~BIT0;
-    //P3OUT |= BIT0;
-    //P3REN |= BIT0;
 
 #ifdef USE_XT1
     PJSEL0 |= BIT4 | BIT5;
@@ -108,30 +92,6 @@ void main_init(void)
 #endif
 }
 
-static void button_31_irq(uint16_t msg)
-{
-    if (P3IN & BIT1) {
-        timer_a2_set_trigger_slot(SCHEDULE_PB_31_OFF, systime() + 300, TIMER_A2_EVENT_ENABLE);
-        timer_a2_set_trigger_slot(SCHEDULE_POWER_SAVING, systime() + POWER_SAVING_DELAY,
-                                  TIMER_A2_EVENT_ENABLE);
-        // IRQ triggers on falling edge
-        P3IES |= BIT1;
-    } else {
-        timer_a2_set_trigger_slot(SCHEDULE_PB_31_OFF, 0, TIMER_A2_EVENT_DISABLE);
-        // IRQ triggers on rising edge
-        P3IES &= ~BIT1;
-    }
-}
-
-static void button_33_irq(uint16_t msg)
-{
-    if (P3IN & BIT3) {
-        //sig2_on;
-    } else {
-        //sig2_off;
-    }
-}
-
 static void button_55_irq(uint16_t msg)
 {
     if (P5IN & BIT5) {
@@ -164,33 +124,15 @@ static void button_56_long_press_irq(uint16_t msg)
     uart0_print("PB56 long\r\n");
 }
 
-static void poweroff_irq(uint16_t msg)
-{
-    halt();
-}
-
 static void scheduler_irq(uint16_t msg)
 {
     timer_a2_scheduler_handler();
 }
 
-void halt(void)
-{
-    bus_5v_off;
-    bus_3v3_off;
-    sig0_on;
-    sig1_off;
-    sig2_off;
-    sig3_off;
-    sig4_off;
-}
-
 static void uart0_rx_irq(uint16_t msg)
 {
-    //parse_user_input();
+    parse_user_input();
     uart0_set_eol();
-    timer_a2_set_trigger_slot(SCHEDULE_POWER_SAVING, systime() + POWER_SAVING_DELAY,
-                              TIMER_A2_EVENT_ENABLE);
 }
 
 void check_events(void)
@@ -236,15 +178,6 @@ void check_events(void)
     // timer_a2-based scheduler
     ev = timer_a2_get_event_schedule();
     if (ev) {
-        if ((ev & (1 << SCHEDULE_POWER_SAVING)) || (ev & (1 << SCHEDULE_PB_31_OFF))) {
-            msg |= SYS_MSG_SCH_POWEROFF;
-        }
-        if (ev & (1 << SCHEDULE_LED_ON)) {
-            msg |= SYS_MSG_SCH_LED_ON;
-        }
-        if (ev & (1 << SCHEDULE_LED_OFF)) {
-            msg |= SYS_MSG_SCH_LED_OFF;
-        }
         if (ev & (1 << SCHEDULE_PB_55)) {
             msg |= SYS_MSG_P55_TMOUT_INT;
         }
@@ -254,18 +187,6 @@ void check_events(void)
         timer_a2_rst_event_schedule();
     }
 
-    // push button P3.1, P3.3 int
-    if (port3_last_event) {
-        if (port3_last_event & BIT1) {
-            msg |= SYS_MSG_P31_INT;
-            port3_last_event ^= BIT1;
-        }
-        if (port3_last_event & BIT3) {
-            msg |= SYS_MSG_P33_INT;
-            port3_last_event ^= BIT3;
-        }
-        port3_last_event = 0;
-    }
     // push button P5.x
     if (port5_last_event) {
         if (port5_last_event & BIT5) {
@@ -295,7 +216,7 @@ int main(void)
 
 //    timer_a0_init();            // edge uart timeout
 //    timer_a1_init();            // interface - ccr1 - meas interval, ccr2 - blocking delay
-//    timer_a2_init();            // systime()
+    timer_a2_init();            // scheduler, systime()
     uart0_port_init();
     uart0_init();
 
@@ -309,22 +230,13 @@ int main(void)
     sig3_off;
 
     sys_messagebus_register(&uart0_rx_irq, SYS_MSG_UART0_RX);
-    sys_messagebus_register(&button_31_irq, SYS_MSG_P31_INT);
-    sys_messagebus_register(&button_33_irq, SYS_MSG_P33_INT);
     sys_messagebus_register(&button_55_irq, SYS_MSG_P55_INT);
     sys_messagebus_register(&button_56_irq, SYS_MSG_P56_INT);
 
-    sys_messagebus_register(&poweroff_irq, SYS_MSG_SCH_POWEROFF);
     sys_messagebus_register(&button_55_long_press_irq, SYS_MSG_P55_TMOUT_INT);
     sys_messagebus_register(&button_56_long_press_irq, SYS_MSG_P56_TMOUT_INT);
 
     sys_messagebus_register(&scheduler_irq, SYS_MSG_TIMERA2_CCR1);
-    timer_a2_set_trigger_slot(SCHEDULE_POWER_SAVING, POWER_SAVING_DELAY, TIMER_A2_EVENT_ENABLE);
-
-    // Reset IRQ flags
-    P3IFG = 0;
-    // Enable button interrupt
-    P3IE |= BIT1;
 
     // Reset IRQ flags
     P5IFG &= ~(BIT5 | BIT6);
@@ -350,38 +262,7 @@ int main(void)
         check_events();
         check_events();
         check_events();
-        check_events();
-        check_events();
     }
-}
-
-// Port 3 interrupt service routine
-#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
-#pragma vector=PORT3_VECTOR
-__interrupt void port3_isr_handler(void)
-#elif defined(__GNUC__)
-void __attribute__ ((interrupt(PORT3_VECTOR))) port3_isr_handler(void)
-#else
-#error Compiler not supported!
-#endif
-{
-    switch (P3IV) {
-    case P3IV__P3IFG1:
-        port3_last_event |= BIT1;
-        // listen for opposite edge
-        P3IES ^= BIT1;
-        //P3IFG &= ~TRIG1;
-        _BIC_SR_IRQ(LPM3_bits);
-        break;
-    case P3IV__P3IFG3:
-        port3_last_event |= BIT3;
-        // listen for opposite edge
-        P3IES ^= BIT3;
-        //P3IFG &= ~TRIG3;
-        _BIC_SR_IRQ(LPM3_bits);
-        break;
-    }
-    P3IFG = 0;
 }
 
 // Port 5 interrupt service routine
@@ -399,14 +280,12 @@ void __attribute__ ((interrupt(PORT5_VECTOR))) port5_isr_handler(void)
         port5_last_event |= BIT5;
         // listen for opposite edge
         P5IES ^= BIT5;
-        //P3IFG &= ~TRIG1;
         _BIC_SR_IRQ(LPM3_bits);
         break;
     case P5IV__P5IFG6:
         port5_last_event |= BIT6;
         // listen for opposite edge
         P5IES ^= BIT6;
-        //P3IFG &= ~TRIG1;
         _BIC_SR_IRQ(LPM3_bits);
         break;
 
