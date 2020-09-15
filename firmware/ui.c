@@ -8,6 +8,7 @@
 #include "timer_a2.h"
 #include "ui.h"
 #include "version.h"
+#include "zglobal.h"
 
 void display_menu(void)
 {
@@ -17,6 +18,8 @@ void display_menu(void)
     uart0_print("\r\n\r\ngeneric commands:\r\n\r\n");
     uart0_print(" \e[33;1m?\e[0m    - show help\r\n");
     uart0_print(" \e[33;1msch\e[0m  - show schedule\r\n");
+    uart0_print(" \e[33;1mread\e[0m - read HIFRAM\r\n");
+    uart0_print(" \e[33;1mgo\e[0m   - start transfer\r\n");
 }
 
 void display_DONE(void)
@@ -173,6 +176,12 @@ void parse_user_input(void)
         display_schedule();
     } else if (strstr(input, "read")) {
         print_buf((uint8_t *)(uintptr_t) HIGH_FRAM_ADDR, 512);
+    } else if (strstr(input, "go")) {
+        Txhdr[ZF0] = CANFC32|CANFDX|CANOVIO;
+        Txhdr[ZF1] = 0;
+        Txhdr[ZF2] = 0;
+        Txhdr[ZF3] = 0;
+        zshhdr(ZRINIT, Txhdr);
     }
 }
 

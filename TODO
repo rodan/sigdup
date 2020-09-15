@@ -1,8 +1,17 @@
+
+TODO
+
  pc application:
   - import the pulseview-generated data and convert it into a 'dup' file containing channel states and timing information
 
  microcontroller:
   - zmodem implementation for the transfer of the dup file from pc
-  - read/write dup info into HIFRAM (0x00010000 - 0x00043FF7)
   - scheduling of signal transitions based on the dup file
+
+
+DONE
+
+ microcontroller:
+  - read/write dup info into HIFRAM (0x00010010 - 0x00043FF7) - done
+
 
