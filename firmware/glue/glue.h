@@ -1,7 +1,6 @@
 #ifndef __GLUE_H__
 #define __GLUE_H__
 
-#include "uart0.h"
 #include "helper.h"
 #include "sys_messagebus.h"
 

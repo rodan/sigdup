@@ -6,6 +6,7 @@
 
 #include "glue.h"
 #include "timer_a2.h"
+#include "uart0.h"
 #include "ui.h"
 #include "version.h"
 #include "zglobal.h"
@@ -177,11 +178,7 @@ void parse_user_input(void)
     } else if (strstr(input, "read")) {
         print_buf((uint8_t *)(uintptr_t) HIGH_FRAM_ADDR, 512);
     } else if (strstr(input, "go")) {
-        Txhdr[ZF0] = CANFC32|CANFDX|CANOVIO;
-        Txhdr[ZF1] = 0;
-        Txhdr[ZF2] = 0;
-        Txhdr[ZF3] = 0;
-        zshhdr(ZRINIT, Txhdr);
+        wcreceive();
     }
 }
 

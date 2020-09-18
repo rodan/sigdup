@@ -7,12 +7,14 @@
 #include "proj.h"
 #include "driverlib.h"
 #include "glue.h"
+#include "uart0.h"
 #include "ui.h"
 #include "timer_a0.h"
 #include "timer_a1.h"
 #include "timer_a2.h"
 #include "uart0.h"
 #include "version.h"
+#include "zglobal.h"
 
 volatile uint8_t port5_last_event;
 
@@ -112,9 +114,9 @@ static void button_55_irq(uint16_t msg)
     if (P5IN & BIT5) {
         //sig2_off;
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, 0, TIMER_A2_EVENT_DISABLE);
-        tcounter++;
+        //tcounter++;
         //FRAMCtl_A_write8(&tcounter, (uint8_t *)(uintptr_t)HIGH_FRAM_START, 1);
-        FRAMCtl_A_write8(&tcounter, (uint8_t *)HIGH_FRAM_ADDR, 1);
+        //FRAMCtl_A_write8(&tcounter, (uint8_t *)HIGH_FRAM_ADDR, 1);
     } else {
         //sig2_on;
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, systime() + 100, TIMER_A2_EVENT_ENABLE);
@@ -149,8 +151,15 @@ static void scheduler_irq(uint16_t msg)
 
 static void uart0_rx_irq(uint16_t msg)
 {
-    parse_user_input();
+    uint8_t input_type = uart0_get_input_type();
+
+    if (input_type == RX_USER) {
+        parse_user_input();
+    } else {
+        z_parse_frame();
+    }
     uart0_set_eol();
+    uart0_set_input_type(RX_USER);
 }
 
 void check_events(void)
@@ -232,7 +241,7 @@ int main(void)
     WDTCTL = WDTPW | WDTHOLD;
     main_init();
 
-//    timer_a0_init();            // edge uart timeout
+    timer_a0_init();            // uart timeout
 //    timer_a1_init();            // interface - ccr1 - meas interval, ccr2 - blocking delay
     timer_a2_init();            // scheduler, systime()
     uart0_port_init();
@@ -248,6 +257,7 @@ int main(void)
     sig3_off;
 
     sys_messagebus_register(&uart0_rx_irq, SYS_MSG_UART0_RX);
+    sys_messagebus_register(&uart0_rx_irq, SYS_MSG_TIMERA0_CCR1);
     sys_messagebus_register(&button_55_irq, SYS_MSG_P55_INT);
     sys_messagebus_register(&button_56_irq, SYS_MSG_P56_INT);
 
@@ -267,11 +277,11 @@ int main(void)
     while (1) {
         // sleep
 #ifdef LED_SYSTEM_STATES
-        sig4_off;
+        //sig4_off;
 #endif
         _BIS_SR(LPM3_bits + GIE);
 #ifdef LED_SYSTEM_STATES
-        sig4_on;
+        //sig4_on;
 #endif
         __no_operation();
 //#ifdef USE_WATCHDOG

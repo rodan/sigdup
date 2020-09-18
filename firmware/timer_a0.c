@@ -108,7 +108,7 @@ void timer0_A1_ISR(void)
         TA0CCTL1 &= ~CCIE;
         TA0CCTL1 = 0;
         timer_a0_last_event |= TIMER_A0_EVENT_CCR1;
-        //uart3_disable_rx();
+        uart0_disable_rx();
         _BIC_SR_IRQ(LPM3_bits);
     } else if (iv == TAIV__TACCR2) {
         // timer used by timer_a0_delay_noblk_ccr2()

@@ -337,17 +337,6 @@ void vfile __P ((const char *format, ...));
 #define vchar(x) putc(x,stderr)
 #define vstring(x) fputs(x,stderr)
 
-#ifdef __GNUC__
-#if __GNUC__ > 1
-#define vstringf(format,args...) fprintf(stderr,format, ##args)
-#endif
-#endif
-#ifndef vstringf
-void vstringf __P ((const char *format, ...));
-#endif
-#define VPRINTF(level,format_args) do {if ((Verbose)>=(level)) \
-	vstringf format_args ; } while(0)
-
 /* rbsb.c */
 int from_cu __P ((void)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
 int rdchk __P ((int fd));
@@ -366,6 +355,10 @@ extern long cr3tab[];
 
 /* zm.c */
 #include "zmodem.h"
+#include "lrz.h"
+
+extern rz_sm_t rz_sm;
+
 extern unsigned int Rxtimeout;        /* Tenths of seconds to wait for something */
 extern int bytes_per_error;  /* generate one error around every x bytes */
 
@@ -393,6 +386,7 @@ int zrdata __P ((char *buf, int length, size_t *received));
 int zgethdr __P ((char *hdr, int eflag, size_t *));
 void stohdr __P ((size_t pos)) LRZSZ_ATTRIB_REGPARM(1);
 long rclhdr __P ((char *hdr)) LRZSZ_ATTRIB_REGPARM(1);
+void z_parse_frame(void);
 
 int tcp_server __P ((char *buf)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
 int tcp_connect __P ((char *buf)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
