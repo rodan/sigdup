@@ -1,0 +1,25 @@
+linux-based test suite for the zmodem functionality
+
+zmodem_unit_test.sh
+  is a script that can verify file transfer with a customizable number of iterations. you'll need 'lsz' from the lrsz package for it to work.
+  -n generates TEST_ITER number of random binary files and transfers them via 'rz'
+  -e retries the transfer of already generated files
+    the script stops at the first transfer error it encounters. 'caught signal 13' errors can be ignored - it happens if 'rz' closes the pipe before 'lsz' does. 
+
+make
+
+  generates the rz binary that can be tested with the enclosed zmodem_unit_test.sh
+
+make cppcheck
+
+  runs Cppcheck static code analysis
+
+make scan-build
+
+  runs LLVM's static code analyzer
+
+
+
+
+
+

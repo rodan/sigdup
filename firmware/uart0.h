@@ -24,6 +24,7 @@ typedef enum {
 void uart0_init(void);
 void uart0_initb(const uint8_t baudrate);
 void uart0_port_init(void);
+void uart0_tx(const uint8_t byte);
 uint16_t uart0_tx_str(const char *str, const uint16_t size);
 uint16_t uart0_print(const char *str);
 uint8_t uart0_get_event(void);

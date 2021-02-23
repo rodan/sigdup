@@ -4,6 +4,13 @@ zmodem - 9s, 5 packets, ?, no padding at the end of file, file descriptor presen
 
 file size: 50932 bytes
 
+--- direct testing ---------
+mkfifo /tmp/pipe
+cd /tmp
+sz /etc/resolv.conf < /tmp/pipe | rz --overwrite > /tmp/pipe
+----------------------------
+
+
 --- protocol analysis ------
 sigrok-cli -i zmodem.sr -P uart:baudrate=57600:tx=0:rx=1 -A uart=tx-data,uart=rx-data | sed 's|uart-1:||' | head -n200 |  xargs
 sigrok-cli -i zmodem.sr -P uart:baudrate=57600:tx=0:rx=1 -B uart=rxtx | xxd

@@ -13,8 +13,8 @@
 #include "timer_a1.h"
 #include "timer_a2.h"
 #include "uart0.h"
+#include "zmodem.h"
 #include "version.h"
-#include "zglobal.h"
 
 volatile uint8_t port5_last_event;
 
@@ -149,6 +149,17 @@ static void scheduler_irq(uint16_t msg)
     timer_a2_scheduler_handler();
 }
 
+void zmodem_parse_input(void)
+{
+    //uint8_t c;
+    uint8_t i;
+    char *input = uart0_get_rx_buf();
+    
+    for (i=0; i<uart0_get_p(); i++) {
+        zrx_byte(input[i]);
+    }
+}
+
 static void uart0_rx_irq(uint16_t msg)
 {
     uint8_t input_type = uart0_get_input_type();
@@ -156,7 +167,7 @@ static void uart0_rx_irq(uint16_t msg)
     if (input_type == RX_USER) {
         parse_user_input();
     } else {
-        z_parse_frame();
+        zmodem_parse_input();
     }
     uart0_set_eol();
     uart0_set_input_type(RX_USER);

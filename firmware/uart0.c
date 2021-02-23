@@ -9,6 +9,7 @@
 
 // get the UART0_SPEED_ #define
 #include "config.h"
+#include "zmodem.h"
 
 volatile char uart0_rx_buf[UART0_RXBUF_SZ];     // receive buffer
 static volatile uint8_t uart0_p;        // number of characters received, 0 if none
@@ -167,6 +168,13 @@ uint8_t uart0_get_p(void)
     return uart0_p;
 }
 
+void uart0_tx(const uint8_t byte)
+{
+    while (!(UCA0IFG & UCTXIFG)) {
+    }                       // USCI_A0 TX buffer ready?
+    UCA0TXBUF = byte;
+}
+
 uint16_t uart0_tx_str(const char *str, const uint16_t size)
 {
     uint16_t p = 0;
@@ -218,7 +226,7 @@ void __attribute__ ((interrupt(EUSCI_A0_VECTOR))) USCI_A0_ISR(void)
 {
     uint16_t iv = UCA0IV;
     register char rx;
-    uint8_t c;
+    //uint8_t c;
     uint8_t ev = 0;
 
 #ifdef LED_SYSTEM_STATES
@@ -270,23 +278,26 @@ void __attribute__ ((interrupt(EUSCI_A0_VECTOR))) USCI_A0_ISR(void)
                 uart0_rx_buf[uart0_p] = rx;
                 uart0_rx_buf[uart0_p + 1] = 0;
                 uart0_p++;
-                //ev = UART0_EV_RX;
+                ev = UART0_EV_RX;
+                _BIC_SR_IRQ(LPM3_bits);
                 timer_a0_delay_noblk_ccr1(intrchar_tmout);
             }
+            /*
             if ((uart0_p == 10) && (uart0_rx_buf[0] == ZBIN32) && (uart0_rx_buf[1] == ZDATA)) {
                 sig4_on;
-                uart0_input_type = RX_ZMODEM_DATA;
-                f_counter = 0;
-                f_addr_cur = HIGH_FRAM_ADDR;
+                //uart0_input_type = RX_ZMODEM_DATA;
+                //f_counter = 0;
+                //f_addr_cur = HIGH_FRAM_ADDR;
                 return;
             }
         } else if (uart0_input_type == RX_ZMODEM_DATA) {
             // zmodem data - needs to end up in hifram
-            c = rx;
-            FRAMCtl_A_write8(&c, (uint8_t *)f_addr_cur++, 1);
+            //c = rx;
+            //FRAMCtl_A_write8(&c, (uint8_t *)f_addr_cur++, 1);
             //f_addr_cur++;
-            f_counter++;
-            timer_a0_delay_noblk_ccr1(intrchar_tmout);
+            //f_counter++;
+            //timer_a0_delay_noblk_ccr1(intrchar_tmout);
+        */
         }
         break;
     case USCI_UART_UCTXIFG:
