@@ -137,9 +137,11 @@ struct {
 #define ZDEBUG(...)
 #endif
 void ztx_byte(uint8_t byte);
+#define zmodem_exit()
 #else
 #define ZDEBUG(...)
 #define ztx_byte(x) uart0_tx(x)
+#define zmodem_exit() uart0_set_input_type(RX_USER)
 #endif
 
 #define isxdigit(x) ((((x) >= '0') && ((x) <= '9')) || (((x) >= 'a') && ((x) <= 'f')))
@@ -717,6 +719,8 @@ void zmodem_process_header(void)
         usleep(40);
         exit(0);
 #endif
+        // exit zmodem parsing mode
+        zmodem_exit();
         break;
     case ZRPOS:
         zmodem_process_zrpos();

@@ -132,7 +132,7 @@ static void button_55_long_press_irq(uint16_t msg)
 static void button_56_irq(uint16_t msg)
 {
     if (P5IN & BIT6) {
-        sig0_off;
+        //sig0_off;
         timer_a2_set_trigger_slot(SCHEDULE_PB_56, 0, TIMER_A2_EVENT_DISABLE);
     } else {
         timer_a2_set_trigger_slot(SCHEDULE_PB_56, systime() + 100, TIMER_A2_EVENT_ENABLE);
@@ -163,6 +163,7 @@ void zmodem_parse_input(void)
 static void uart0_rx_irq(uint16_t msg)
 {
     uint8_t input_type = uart0_get_input_type();
+    sig2_on;
 
     if (input_type == RX_USER) {
         parse_user_input();
@@ -170,7 +171,8 @@ static void uart0_rx_irq(uint16_t msg)
         zmodem_parse_input();
     }
     uart0_set_eol();
-    uart0_set_input_type(RX_USER);
+    //uart0_set_input_type(RX_USER);
+    sig2_off;
 }
 
 void check_events(void)
@@ -266,14 +268,15 @@ int main(void)
     sig1_off;
     sig2_off;
     sig3_off;
+    sig4_off;
 
     sys_messagebus_register(&uart0_rx_irq, SYS_MSG_UART0_RX);
-    sys_messagebus_register(&uart0_rx_irq, SYS_MSG_TIMERA0_CCR1);
-    sys_messagebus_register(&button_55_irq, SYS_MSG_P55_INT);
-    sys_messagebus_register(&button_56_irq, SYS_MSG_P56_INT);
+    //sys_messagebus_register(&uart0_rx_irq, SYS_MSG_TIMERA0_CCR1);
+    //sys_messagebus_register(&button_55_irq, SYS_MSG_P55_INT);
+    //sys_messagebus_register(&button_56_irq, SYS_MSG_P56_INT);
 
-    sys_messagebus_register(&button_55_long_press_irq, SYS_MSG_P55_TMOUT_INT);
-    sys_messagebus_register(&button_56_long_press_irq, SYS_MSG_P56_TMOUT_INT);
+    //sys_messagebus_register(&button_55_long_press_irq, SYS_MSG_P55_TMOUT_INT);
+    //sys_messagebus_register(&button_56_long_press_irq, SYS_MSG_P56_TMOUT_INT);
 
     sys_messagebus_register(&scheduler_irq, SYS_MSG_TIMERA2_CCR1);
 

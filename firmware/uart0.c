@@ -22,7 +22,7 @@ volatile uint16_t intrchar_tmout;
 volatile uint32_t f_addr_cur;
 volatile uint32_t f_counter;
 
-static volatile uint8_t uart0_input_type;       // type of input - either user generated or zmodem (see input_type enum below)
+volatile uint8_t uart0_input_type;       // type of input - either user generated or zmodem (see input_type enum below)
 
 // you'll have to initialize/map uart ports in main()
 // or use uart0_port_init() if no mapping is needed
@@ -152,6 +152,7 @@ void uart0_set_eol(void)
 {
     uart0_p = 0;
     uart0_rx_enable = 1;
+    sig3_off;
 }
 
 char *uart0_get_rx_buf(void)
@@ -211,7 +212,6 @@ uint8_t uart0_get_input_type(void) {
 
 void uart0_set_input_type(const uint8_t type) {
     uart0_input_type = type;
-    sig4_off;
 }
 
 
@@ -242,17 +242,23 @@ void __attribute__ ((interrupt(EUSCI_A0_VECTOR))) USCI_A0_ISR(void)
                 return;
             }
 
-            if ((uart0_p == 1) || (uart0_p == 2)) {
-                if ((rx == ZDLE) && (uart0_rx_buf[uart0_p - 1] == ZPAD)) {
-                    // strip away ZPAD ZPAD ZDLE and start parsing with the frame type identifier
-                    uart0_p = 0;
+            if (uart0_p == 2) {
+                if ((rx == ZDLE) && (uart0_rx_buf[0] == ZPAD) && (uart0_rx_buf[1] == ZPAD)) {
+                    // ZPAD ZPAD ZDLE signals the start of a zmodem header
+                    sig4_on;
+                    uart0_p++;
+                    uart0_rx_buf[2] = rx;
+                    zmodem_init();
                     uart0_input_type = RX_ZMODEM_HDR;
+                    ev = UART0_EV_RX;
+                    _BIC_SR_IRQ(LPM3_bits);
                     return;
                 }
             }
 
             if (uart0_rx_enable && (!uart0_rx_err) && (uart0_p < UART0_RXBUF_SZ)) {
                 if (rx == 0x0d) {
+                    sig3_off;
                     uart0_rx_buf[uart0_p] = 0;
                     uart0_rx_enable = 0;
                     uart0_rx_err = 0;
@@ -261,18 +267,21 @@ void __attribute__ ((interrupt(EUSCI_A0_VECTOR))) USCI_A0_ISR(void)
                     _BIC_SR_IRQ(LPM3_bits);
                     //}
                 } else {
+                    sig3_on;
                     uart0_rx_buf[uart0_p] = rx;
                     uart0_p++;
                 }
             } else {
                 uart0_rx_err++;
                 uart0_p = 0;
+                sig3_off;
                 if ((rx == 0x0d) || (rx == 0x0a)) {
                     uart0_rx_err = 0;
                     uart0_rx_enable = 1;
                 }
             }
         } else if (uart0_input_type == RX_ZMODEM_HDR) {
+            sig4_on;
             // zmodem header frames
             if (uart0_rx_enable && (uart0_p < UART0_RXBUF_SZ)) {
                 uart0_rx_buf[uart0_p] = rx;
@@ -308,6 +317,7 @@ void __attribute__ ((interrupt(EUSCI_A0_VECTOR))) USCI_A0_ISR(void)
     }
     uart0_last_event |= ev;
 
+    sig4_off;
 
 #ifdef LED_SYSTEM_STATES
     sig3_off;

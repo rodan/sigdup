@@ -9,6 +9,7 @@
 #include "uart0.h"
 #include "ui.h"
 #include "version.h"
+#include "zmodem.h"
 
 void display_menu(void)
 {
@@ -177,7 +178,9 @@ void parse_user_input(void)
     } else if (strstr(input, "read")) {
         print_buf((uint8_t *)(uintptr_t) HIGH_FRAM_ADDR, 512);
     } else if (strstr(input, "go")) {
+        uart0_print("use zmodem to send file\r\n");
         //wcreceive();
+        zmodem_init();
         uart0_set_input_type(RX_ZMODEM_HDR);
     }
 }

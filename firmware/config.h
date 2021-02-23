@@ -21,7 +21,7 @@
 // led 2 - on during timer interrupt operation
 // led 3 - on during meter uart operation
 // led 4 - on when uC is outside of LPM3 (low power mode)
-#define LED_SYSTEM_STATES
+//#define LED_SYSTEM_STATES
 
 //#define CONFIG_DEBUG
 

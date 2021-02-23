@@ -3,6 +3,8 @@
 #ifndef ZMODEM_H
 #define ZMODEM_H
 
+#include <stdbool.h>
+
 #define ZPAD 0x2a
 #define ZDLE 0x18
 
