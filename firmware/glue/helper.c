@@ -463,6 +463,31 @@ char *_utoh16(char *buf, const uint32_t val)
     return p;
 }
 
+char *_utoh32(char *buf, const uint32_t val)
+{
+    char *p = buf + CONV_BASE_8_BUF_SZ - 1;     // the very end of the buffer
+    uint32_t m = val;
+    uint8_t i = 0;
+
+    *p = '\0';
+
+    p -= 8;
+    for (i=0;i<8;i++) {
+        *(p + i) = 0x30;
+    }
+
+    p += 8;
+    // groups of 8 bits
+    while (m > 0 || (i & 1)) {
+        p -= 1;
+        memcpy(p, &hex_ascii[m & 0xf], sizeof(uint8_t));
+        m >>= 4;
+        i++;
+    }
+
+    return buf + 3;
+}
+
 static uint16_t const caps_hex_ascii[16] =
     { 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45,
     0x46

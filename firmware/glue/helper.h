@@ -129,6 +129,7 @@ char *_utob(char *buf, const uint16_t val);
 char *_utoh(char *buf, const uint32_t val);
 char *_utoh8(char *buf, const uint32_t val);
 char *_utoh16(char *buf, const uint32_t val);
+char *_utoh32(char *buf, const uint32_t val);
 char *_utorh(char *buf, const uint32_t val, const uint8_t pad_size);
 
 /** return a decimal string for an uint32_t integer
