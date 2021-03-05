@@ -16,7 +16,9 @@
 int fdout;
 
 #else
+#include "proj.h"
 #include "uart0.h"
+#include "fram_glue.h"
 #endif
 
 #ifdef USE_LFS
@@ -79,26 +81,32 @@ int fdout;
 #define BUFFER_SIZE ZMODEM_BUFFER_SIZE
 
 struct {
-    bool active;
-    int zdlecount;
-    int count;
-    int state;
-    int protostate;
-    int datalen;
+    uint8_t active;
+    uint8_t zdlecount;
+    //int zdlecount;
+    uint16_t count;
+    //int count;
+    uint8_t state;
+    //int state;
+    uint8_t protostate;
+    //int protostate;
+    uint16_t datalen;
+    //int datalen;
     uint8_t frametype;
-    bool escape_ctrl;
-    bool escape_bit8;
-    bool ok;
+    uint8_t escape_ctrl;
+    uint8_t escape_bit8;
+    uint8_t ok;
     uint32_t fileoffset;
     uint32_t transferred;
     uint32_t total;
-    int timeouts;
+    uint16_t timeouts;
+    //int timeouts;
 #ifdef USE_LFS
     lfs_t *lfs;
     lfs_file_t *lfs_file;
 #endif
-    bool fileopen;
-    int debug;
+    uint8_t fileopen;
+    uint8_t debug;
     void (*process_data)(void);
     uint8_t header[5];
     uint8_t crc[4];
@@ -137,21 +145,23 @@ struct {
 #define ZDEBUG(...)
 #endif
 void ztx_byte(uint8_t byte);
+#define zmodem_exit()
 #else
 #define ZDEBUG(...)
 #define ztx_byte(x) uart0_tx(x)
+#define zmodem_exit() uart0_set_input_type(RX_USER)
 #endif
 
 #define isxdigit(x) ((((x) >= '0') && ((x) <= '9')) || (((x) >= 'a') && ((x) <= 'f')))
 #define hexdecode(x) (((x) < 'a') ? ((x) - '0') : ((x) + 10 - 'a'))
 #define hexencode(x) (((x) < 10) ? ((x) + '0') : ((x) - 10 + 'a'))
 
-bool zmodem_open_file(char *filename);
-bool zmodem_close_file(void);
+uint8_t zmodem_open_file(char *filename);
+uint8_t zmodem_close_file(void);
 
 void ztx_escbyte(uint8_t byte)
 {
-    bool escape = false;
+    uint8_t escape = false;
 
     if (zstate.escape_ctrl && (byte < 32))
         escape = true;
@@ -179,14 +189,14 @@ void ztx_hexbyte(uint8_t byte)
     ztx_byte(hexencode(b2));
 }
 
-void zmodem_enter_state(int state)
+void zmodem_enter_state(const uint8_t state)
 {
     zstate.count = 0;
     zstate.state = state;
     ZDEBUG("In state %d\n", state);
 }
 
-void zmodem_enter_protostate(int state)
+void zmodem_enter_protostate(const uint8_t state)
 {
     zstate.protostate = state;
     ZDEBUG("In protocol state %d\n", state);
@@ -227,7 +237,7 @@ void *zmodem_init(
     return zstate.buffer;
 }
 
-int zmodem_progress(void)
+uint8_t zmodem_progress(void)
 {
     if (zstate.total == 0)
         return -1;
@@ -237,12 +247,12 @@ int zmodem_progress(void)
     return zstate.transferred * 100 / zstate.total;
 }
 
-bool zmodem_active(void)
+uint8_t zmodem_active(void)
 {
     return zstate.active;
 }
 
-bool zmodem_waiting(void)
+uint8_t zmodem_waiting(void)
 {
     return zstate.timeouts != 0;
 }
@@ -252,12 +262,12 @@ void zmodem_setactive(void)
     zstate.active = true;
 }
 
-int zmodem_debug(void)
+uint8_t zmodem_debug(void)
 {
     return zstate.debug;
 }
 
-void zmodem_send_hex_header(int type, void *data);
+void zmodem_send_hex_header(const uint8_t type, void *data);
 
 void zmodem_send_zrinit(void)
 {
@@ -275,9 +285,10 @@ void zmodem_send_zrinit(void)
 
 void zmodem_send_abort(void)
 {
-    for (int i = 0; i < 8; i++)
+    uint8_t i;
+    for (i = 0; i < 8; i++)
         ztx_byte(ZDLE);
-    for (int i = 0; i < 10; i++)
+    for (i = 0; i < 10; i++)
         ztx_byte(8);
 }
 
@@ -437,7 +448,7 @@ void zmodem_process_zfile_data(void)
 
     /* Optional - send a ZRCRC to determine where to start from */
 
-    ZDEBUG("Got filename: %s\n", zstate.buffer);
+    ZDEBUG("Got filename: %s, sz %u\n", zstate.buffer, zstate.total);
     zstate.fileoffset = 0;
     if (zmodem_open_file((char *)zstate.buffer)) {
         zmodem_enter_protostate(PROTOSTATE_RX_TRANSFER);
@@ -505,7 +516,7 @@ void zmodem_process_zrpos(void)
     /* We shouldn't get this as a receiver */
 }
 
-bool zmodem_file_write(void)
+uint8_t zmodem_file_write(void)
 {
     int16_t err = -1;
 
@@ -519,8 +530,11 @@ bool zmodem_file_write(void)
 #elif defined(HOST)
     err = write(fdout, zstate.buffer, zstate.datalen);
 #else
+    sig3_on;
     // FRAM
+    fram_write(zstate.buffer, zstate.datalen);
     err = 0;
+    sig3_off;
 #endif
 
     if (err < 0)
@@ -528,7 +542,7 @@ bool zmodem_file_write(void)
     return true;
 }
 
-bool zmodem_open_file(char *filename)
+uint8_t zmodem_open_file(char *filename)
 {
     int16_t err = -1;
 #if defined(USE_LFS)
@@ -540,15 +554,20 @@ bool zmodem_open_file(char *filename)
     }
 #else
     // FRAM
+    fram_init();
+    fram_header hdr;
+    hdr.file_size = zstate.total;
+    fram_write_header(&hdr);
     err = 0;
 #endif
+    ZDEBUG("file sz %u %x\n", zstate.total, zstate.total);
 
     if (!err)
         zstate.fileopen = true;
     return !err;
 }
 
-bool zmodem_close_file(void)
+uint8_t zmodem_close_file(void)
 {
     int16_t err = -1;
 
@@ -566,8 +585,10 @@ bool zmodem_close_file(void)
     return !err;
 }
 
+// FIXME?
 void zmodem_process_zdata_data(void)
 {
+    //sig2_on;
     uint32_t offset = ((uint32_t) zstate.header[1]) +
         ((uint32_t) zstate.header[2] << 8) + ((uint32_t) zstate.header[3] << 16) + ((uint32_t) zstate.header[4] << 24);
 
@@ -590,9 +611,11 @@ void zmodem_process_zdata_data(void)
             zmodem_send_hex_header(ZACK | 0x80, header);
         }
     } else {
+        //sig4_on;
         zmodem_send_rpos();
         zmodem_enter_state(STATE_IDLE);
     }
+    //sig2_off;
 }
 
 void zmodem_process_zdata(void)
@@ -717,6 +740,8 @@ void zmodem_process_header(void)
         usleep(40);
         exit(0);
 #endif
+        // exit zmodem parsing mode
+        zmodem_exit();
         break;
     case ZRPOS:
         zmodem_process_zrpos();
@@ -786,12 +811,13 @@ void zmodem_timeout(void)
     zmodem_send_zrinit();
 }
 
-void zmodem_send_hex_header(int type, void *data)
+void zmodem_send_hex_header(const uint8_t type, void *data)
 {
+    uint8_t i;
     uint8_t buffer[5];
     uint16_t crc;
     buffer[0] = type & 0x7f;
-    for (int i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
         buffer[i + 1] = ((uint8_t *) data)[i];
     ZDEBUG("Send hex header: %x %x %x %x %x\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
     crc = crc16(buffer, 5, 0);
@@ -799,7 +825,7 @@ void zmodem_send_hex_header(int type, void *data)
     ztx_byte(ZPAD);
     ztx_byte(ZDLE);
     ztx_byte(ZHEX);
-    for (int i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++)
         ztx_hexbyte(buffer[i]);
     ztx_hexbyte(crc >> 8);
     ztx_hexbyte(crc & 0xff);
@@ -810,37 +836,39 @@ void zmodem_send_hex_header(int type, void *data)
     ztx_byte(XON);
 }
 
-void zmodem_send_bin_header(int type, void *data)
+void zmodem_send_bin_header(const uint8_t type, void *data)
 {
+    uint8_t i;
     uint8_t buffer[5];
     uint16_t crc;
     buffer[0] = type;
-    for (int i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
         buffer[i + 1] = ((uint8_t *) data)[i];
     ZDEBUG("Send bin header: %x %x %x %x %x\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
     crc = crc16(buffer, 5, 0);
     ztx_byte(ZPAD);
     ztx_byte(ZDLE);
     ztx_byte(ZHEX);
-    for (int i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++)
         ztx_escbyte(buffer[i]);
     ztx_escbyte(crc >> 8);
     ztx_escbyte(crc & 0xff);
 }
 
-void zmodem_send_bin32_header(int type, void *data)
+void zmodem_send_bin32_header(const uint8_t type, void *data)
 {
+    uint8_t i;
     uint8_t buffer[5];
     uint32_t crc;
     buffer[0] = type;
-    for (int i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
         buffer[i + 1] = ((uint8_t *) data)[i];
     ZDEBUG("Send bin32 header: %x %x %x %x %x\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
     crc = crc32(buffer, 5, 0);
     ztx_byte(ZPAD);
     ztx_byte(ZDLE);
     ztx_byte(ZHEX);
-    for (int i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++)
         ztx_escbyte(buffer[i]);
     ztx_escbyte((crc >> 24) & 0xff);
     ztx_escbyte((crc >> 16) & 0xff);
@@ -854,11 +882,12 @@ void zmodem_send_znak(void)
     zmodem_send_hex_header(ZNAK, zero);
 }
 
-void zmodem_process_data(bool ok)
+void zmodem_process_data(uint8_t ok)
 {
+    uint16_t i;
     ZDEBUG("Data received\n");
     ZDEBUG("CRC %s\n", ok ? "ok" : "not ok");
-    for (int i = 0; i < zstate.datalen; i++) {
+    for (i = 0; i < zstate.datalen; i++) {
         ZDEBUG("%x ", zstate.buffer[i]);
         if ((i % 16) == 15) {
             ZDEBUG("\n");
@@ -1037,6 +1066,7 @@ void zrx_byte(uint8_t byte)
             break;
         case STATE_DATA_ZBIN:
         case STATE_DATA_ZBIN32:
+            //sig4_on;
             if (zstate.count < BUFFER_SIZE)
                 zstate.buffer[zstate.count] = byte;
             zstate.count++;
@@ -1069,6 +1099,7 @@ void zrx_byte(uint8_t byte)
                 }
             }
             break;
+            //sig4_off;
         case STATE_DATA_ZBIN_ZCRCE:
         case STATE_DATA_ZBIN_ZCRCG:
         case STATE_DATA_ZBIN_ZCRCQ:

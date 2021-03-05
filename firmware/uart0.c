@@ -33,54 +33,66 @@ void uart0_init(void)
     // consult 'Recommended Settings for Typical Crystals and Baud Rates' in slau367o
     // for some reason any baud >= 115200 ends up with a non-working RX channel
 
-#ifdef UART0_SPEED_9600_1M
+#if defined(CPU_FREQ_1M)
+
+#if defined (UART0_SPEED_9600)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 6;
     UCA0MCTLW = 0x2081;
-#elif defined (UART0_SPEED_19200_1M)
+#elif defined (UART0_SPEED_19200)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 3;
     UCA0MCTLW = 0x0241;
-#elif defined (UART0_SPEED_38400_1M)
+#elif defined (UART0_SPEED_38400)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 1;
     UCA0MCTLW = 0x00a1;
-#elif defined (UART0_SPEED_57600_1M)
+#elif defined (UART0_SPEED_57600)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 17;
     UCA0MCTLW = 0x4a00;
-#elif defined (UART0_SPEED_115200_1M)
+#elif defined (UART0_SPEED_115200)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 8;
     UCA0MCTLW = 0xd600;
-#elif defined (UART0_SPEED_9600_8M)
+#endif
+
+#elif defined (CPU_FREQ_8M)
+
+#if defined (UART0_SPEED_9600)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 52;
     UCA0MCTLW = 0x4911;
-#elif defined (UART0_SPEED_19200_8M)
+#elif defined (UART0_SPEED_19200)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 26;
     UCA0MCTLW = 0xb601;
-#elif defined (UART0_SPEED_38400_8M)
+#elif defined (UART0_SPEED_38400)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 13;
     UCA0MCTLW = 0x8401;
-#elif defined (UART0_SPEED_57600_8M)
+#elif defined (UART0_SPEED_57600)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 8;
     UCA0MCTLW = 0xf7a1;
-#elif defined (UART0_SPEED_115200_8M)
+#elif defined (UART0_SPEED_115200)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 4;
     UCA0MCTLW = 0x5551;
-#elif defined (UART0_SPEED_230400_8M)
+#endif
+
+#elif defined (CPU_FREQ_16M)
+
+#if defined (UART0_SPEED_9600)
     UCA0CTLW0 |= UCSSEL__SMCLK;
-    UCA0BRW = 2;
-    UCA0MCTLW = 0xbb21;
-#elif defined (UART0_SPEED_460800_8M)
+    UCA0BRW = 104;
+    UCA0MCTLW = 0xd621;
+#elif defined (UART0_SPEED_57600)
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BRW = 17;
-    UCA0MCTLW = 0x4a00;
+    UCA0MCTLW = 0xdd51;
+#endif
+
 #else                           // a safer default of 9600 - does not depend on SMCLK
     UCA0CTLW0 |= UCSSEL__ACLK;
     UCA0BRW = 3;
@@ -245,7 +257,7 @@ void __attribute__ ((interrupt(EUSCI_A0_VECTOR))) USCI_A0_ISR(void)
             if (uart0_p == 2) {
                 if ((rx == ZDLE) && (uart0_rx_buf[0] == ZPAD) && (uart0_rx_buf[1] == ZPAD)) {
                     // ZPAD ZPAD ZDLE signals the start of a zmodem header
-                    sig4_on;
+                    //sig4_on;
                     uart0_p++;
                     uart0_rx_buf[2] = rx;
                     zmodem_init();
@@ -281,7 +293,7 @@ void __attribute__ ((interrupt(EUSCI_A0_VECTOR))) USCI_A0_ISR(void)
                 }
             }
         } else if (uart0_input_type == RX_ZMODEM_HDR) {
-            sig4_on;
+            //sig4_on;
             // zmodem header frames
             if (uart0_rx_enable && (uart0_p < UART0_RXBUF_SZ)) {
                 uart0_rx_buf[uart0_p] = rx;
@@ -317,7 +329,7 @@ void __attribute__ ((interrupt(EUSCI_A0_VECTOR))) USCI_A0_ISR(void)
     }
     uart0_last_event |= ev;
 
-    sig4_off;
+    //sig4_off;
 
 #ifdef LED_SYSTEM_STATES
     sig3_off;

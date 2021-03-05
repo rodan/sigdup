@@ -9,7 +9,7 @@ extern "C" {
 #define    UART0_EV_RX 0x1
 #define    UART0_EV_TX 0x2
 
-#define UART0_RXBUF_SZ 128
+#define UART0_RXBUF_SZ 256
 
 #define    BAUDRATE_9600  0x1
 #define   BAUDRATE_19200  0x2

@@ -13,25 +13,14 @@
 #include "timer_a1.h"
 #include "timer_a2.h"
 #include "uart0.h"
+#include "uart3.h"
 #include "zmodem.h"
 #include "version.h"
+#include "fram_glue.h"
 
 volatile uint8_t port5_last_event;
 
-/*
-#if defined (__TI_COMPILER_VERSION__)
-#pragma PERSISTENT(HIGH_FRAM_START)
-uint32_t HIGH_FRAM_START =
-#elif defined (__IAR_SYSTEMS_ICC__)
-__persistent uint32_t HIGH_FRAM_START =
-#elif defined (__GNUC__)
-__attribute__ ((section (".persistent"))) uint32_t HIGH_FRAM_START =
-#endif
-        HIGH_FRAM_ADDR;
-*/
-
 uint8_t tcounter = 0;
-
 
 void main_init(void)
 {
@@ -74,14 +63,14 @@ void main_init(void)
     PJSEL0 |= BIT4 | BIT5;
 #ifdef USE_XT2
     PJSEL0 |= BIT6 | BIT7;
-    CS_setExternalClockSource(32768, 8000000);
+    CS_setExternalClockSource(32768, 16000000);
 #else
     CS_setExternalClockSource(32768, 0);
 #endif
 #else
 #ifdef USE_XT2
     PJSEL0 |= BIT6 | BIT7;
-    CS_setExternalClockSource(0, 8000000);
+    CS_setExternalClockSource(0, 16000000);
 #endif
 #endif
 
@@ -94,8 +83,12 @@ void main_init(void)
     CS_initClockSignal(CS_SMCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_1);
     CS_initClockSignal(CS_MCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_1);
 #else
-    // Set DCO Frequency to 8MHz
-    CS_setDCOFreq(CS_DCORSEL_0, CS_DCOFSEL_6);
+    // Set DCO Frequency
+    #if defined (CPU_FREQ_8M)
+    CS_setDCOFreq(CS_DCORSEL_0, CS_DCOFSEL_6); // 8MHz
+    #elif defined (CPU_FREQ_16M)
+    CS_setDCOFreq(CS_DCORSEL_1, CS_DCOFSEL_4); // 16MHz
+    #endif
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
     CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
 #endif
@@ -105,10 +98,11 @@ void main_init(void)
 #endif
 
 #ifdef USE_XT2
-    CS_turnOnHFXT(CS_HFXT_DRIVE_8MHZ_16MHZ);
+    CS_turnOnHFXT(CS_HFXT_DRIVE_16MHZ_24MHZ);
 #endif
 }
 
+/*
 static void button_55_irq(uint16_t msg)
 {
     if (P5IN & BIT5) {
@@ -143,6 +137,7 @@ static void button_56_long_press_irq(uint16_t msg)
 {
     uart0_print("PB56 long\r\n");
 }
+*/
 
 static void scheduler_irq(uint16_t msg)
 {
@@ -254,11 +249,15 @@ int main(void)
     WDTCTL = WDTPW | WDTHOLD;
     main_init();
 
+    fram_init();
+
     timer_a0_init();            // uart timeout
 //    timer_a1_init();            // interface - ccr1 - meas interval, ccr2 - blocking delay
     timer_a2_init();            // scheduler, systime()
     uart0_port_init();
     uart0_init();
+
+    uart3_init(BAUDRATE_57600);
 
     // Disable the GPIO power-on default high-impedance mode to activate
     // previously configured port settings

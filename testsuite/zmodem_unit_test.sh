@@ -79,7 +79,8 @@ create_testfile()
 
     [ ${file_sz} == 0 ] && file_sz=1
 
-    dd if=/dev/urandom of=${file} bs=${file_sz} count=1 status=none || {
+    #dd if=/dev/urandom of=${file} bs=${file_sz} count=1 status=none || {
+    dd if=/dev/zero of=${file} bs=${file_sz} count=1 status=none || {
         echo 'dd error, exiting'
         return 1
     }

@@ -4,12 +4,15 @@
 #include <math.h>
 #include <inttypes.h>
 
+#include "proj.h"
 #include "glue.h"
 #include "timer_a2.h"
 #include "uart0.h"
+#include "uart3.h"
 #include "ui.h"
 #include "version.h"
 #include "zmodem.h"
+#include "fram_glue.h"
 
 void display_menu(void)
 {
@@ -95,7 +98,38 @@ void print_buf(uint8_t * data, const uint16_t size)
         bytes_printed += bytes_to_be_printed;
         bytes_remaining -= bytes_to_be_printed;
     }
+}
 
+void print_buf_fram(const uint32_t address, const uint32_t size)
+{
+    uint16_t bytes_remaining = size;
+    uint16_t bytes_to_be_printed, bytes_printed = 0;
+    char itoa_buf[CONV_BASE_10_BUF_SZ];
+    uint16_t i;
+    uint8_t *read_ptr = (uint8_t *) address;
+
+    while (bytes_remaining > 0) {
+
+        if (bytes_remaining > 16) {
+            bytes_to_be_printed = 16;
+        } else {
+            bytes_to_be_printed = bytes_remaining;
+        }
+
+        uart0_print(_utoh16(itoa_buf, bytes_printed));
+        uart0_print(": ");
+
+        for (i = 0; i < bytes_to_be_printed; i++) {
+            uart0_print(_utoh8(itoa_buf, *read_ptr++));
+            if (i & 0x1) {
+                uart0_print(" ");
+            }
+        }
+
+        uart0_print("\r\n");
+        bytes_printed += bytes_to_be_printed;
+        bytes_remaining -= bytes_to_be_printed;
+    }
 }
 
 void print_buf_ascii2mem(uint8_t * data, const uint16_t size)
@@ -169,19 +203,38 @@ void parse_user_input(void)
     char f = input[0];
     //uint16_t u16;
     //uint16_t i;
-    //char itoa_buf[CONV_BASE_10_BUF_SZ];
+    char itoa_buf[CONV_BASE_10_BUF_SZ];
+    fram_header *hdr;
 
     if (f == '?') {
         display_menu();
     } else if (strstr(input, "sch")) {
         display_schedule();
     } else if (strstr(input, "read")) {
+        uart0_print(_utoa(itoa_buf, fram_hdr.file_start));
+        uart0_print(" ");
+        uart0_print(_utoa(itoa_buf, fram_hdr.file_sz));
+        uart0_print("\r\n");
+        hdr = (fram_header *) HIGH_FRAM_ADDR;
+        uart0_print(_utoa(itoa_buf, hdr->file_start));
+        uart0_print(" ");
+        uart0_print(_utoa(itoa_buf, hdr->file_sz));
+        uart0_print("\r\n");
+
+
+
+        //fram_seek(hdr.start);
         print_buf((uint8_t *)(uintptr_t) HIGH_FRAM_ADDR, 512);
+
+        //print_buf_fram(hdr->file_start, hdr->file_size);
+        //print_buf_fram(HIGH_FRAM_ADDR + 8, hdr->file_size);
+        
+
     } else if (strstr(input, "go")) {
         uart0_print("use zmodem to send file\r\n");
-        //wcreceive();
-        zmodem_init();
-        uart0_set_input_type(RX_ZMODEM_HDR);
+        uart3_print("use zmodem to send file\r\n");
+        //zmodem_init();
+        //uart0_set_input_type(RX_ZMODEM_HDR);
     }
 }
 

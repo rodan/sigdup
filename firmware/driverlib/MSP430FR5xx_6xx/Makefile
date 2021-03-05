@@ -22,7 +22,7 @@ else
 endif
 
 ######################################
-GCC_INC_DIR      ?= $(GCC_DIR)/msp430-elf/include
+GCC_INC_DIR      ?= /opt/msp430-gcc-support-files/include
 
 all: tags
 
@@ -32,4 +32,4 @@ tags:
 	@exuberant-ctags --recurse=yes $(DRIVERLIB) $(GLUELIB) $(GCC_INC_DIR)/$(shell echo $(DEVICE) | tr A-Z a-z).h $(GCC_INC_DIR)/msp430.h $(GCC_INC_DIR)/msp430fr5xx_6xxgeneric.h
 
 clean:
-	@$(RM) *.o
+	@$(RM) *.o tags
