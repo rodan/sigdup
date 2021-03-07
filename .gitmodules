@@ -1,0 +1,6 @@
+[submodule "firmware/driverlib"]
+	path = firmware/driverlib
+	url = git@github.com:rodan/mspdriverlib.git
+[submodule "firmware/glue"]
+	path = firmware/glue
+	url = git@github.com:rodan/mspglue.git
