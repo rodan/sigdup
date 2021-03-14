@@ -4,11 +4,22 @@
 #define USE_XT1
 //#define USE_XT2
 
-#define UART0_SPEED_9600
-//#define UART0_SPEED_19200
-//#define UART0_SPEED_38400
-//#define UART0_SPEED_57600
-//#define UART0_SPEED_115200
+//#define SMCLK_FREQ_1M
+//#define SMCLK_FREQ_4M
+#define SMCLK_FREQ_8M
+//#define SMCLK_FREQ_16M
+
+//#define BAUD_9600
+//#define BAUD_19200
+//#define BAUD_38400
+#define BAUD_57600
+//#define BAUD_115200
+
+#define UART0_RXBUF_SZ 256
+#define UART0_RX_USES_RINGBUF
+
+//#define UART0_TXBUF_SZ 16
+//#define UART0_TX_USES_IRQ
 
 // enable in order to have the following led setup:
 // led 2 - on during timer interrupt operation

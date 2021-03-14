@@ -8,7 +8,6 @@
 #include "glue.h"
 #include "timer_a2.h"
 #include "uart0.h"
-#include "uart3.h"
 #include "ui.h"
 #include "version.h"
 #include "zmodem.h"
@@ -197,9 +196,30 @@ void print_buf_native(uint8_t * data, const uint16_t size)
     uart0_print("\r\n");
 }
 
+#define PARSER_CNT 8
+
 void parse_user_input(void)
 {
+
+#ifdef UART0_RX_USES_RINGBUF
+    //struct ringbuf *rbrx = uart0_get_rx_ringbuf();
+    uint8_t rx;
+    uint8_t c = 0;
+    char input[PARSER_CNT];
+
+    memset(input, 0, PARSER_CNT);
+
+    // read the entire ringbuffer
+    while (ringbuf_get(&rbrx, &rx)) {
+        if (c < PARSER_CNT-1) {
+            input[c] = rx;
+        }
+        c++;
+    }
+#else
     char *input = uart0_get_rx_buf();
+#endif
+
     char f = input[0];
     //uint16_t u16;
     //uint16_t i;
@@ -217,13 +237,13 @@ void parse_user_input(void)
         hdr = (fram_header *)(uintptr_t) HIGH_FRAM_ADDR;
         print_buf_fram(hdr->file_start, hdr->file_sz);
         //print_buf_fram(HIGH_FRAM_ADDR + 8, hdr->file_size);
-        
-
+    } else if (f == 'a') {
+        //uart0_tx_str("123456789\r\n", 11);
+        uart0_print("123456789\r\n");
     } else if (strstr(input, "go")) {
         uart0_print("use zmodem to send file\r\n");
-        ///uart3_print("use zmodem to send file\r\n");
         zmodem_init();
-        uart0_set_input_type(RX_ZMODEM_HDR);
+        //uart0_set_input_type(RX_ZMODEM_HDR);
     }
 }
 

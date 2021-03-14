@@ -8,12 +8,12 @@
 #include "driverlib.h"
 #include "glue.h"
 #include "uart0.h"
+#include "uart0_extras.h"
 #include "ui.h"
 #include "timer_a0.h"
 #include "timer_a1.h"
 #include "timer_a2.h"
 #include "uart0.h"
-#include "uart3.h"
 #include "zmodem.h"
 #include "version.h"
 #include "fram_glue.h"
@@ -58,72 +58,27 @@ void main_init(void)
     PJDIR = 0xffff;
 
     sig0_on;
-
-#ifdef USE_XT1
-    PJSEL0 |= BIT4 | BIT5;
-#ifdef USE_XT2
-    PJSEL0 |= BIT6 | BIT7;
-    CS_setExternalClockSource(32768, 16000000);
-#else
-    CS_setExternalClockSource(32768, 0);
-#endif
-#else
-#ifdef USE_XT2
-    PJSEL0 |= BIT6 | BIT7;
-    CS_setExternalClockSource(0, 16000000);
-#endif
-#endif
-
-#ifdef USE_XT1
-    // configure MCLK, SMCLK to be source by DCOCLK
-    CS_initClockSignal(CS_ACLK, CS_LFXTCLK_SELECT, CS_CLOCK_DIVIDER_1);
-#endif
-
-#ifdef USE_XT2
-    CS_initClockSignal(CS_SMCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_1);
-    CS_initClockSignal(CS_MCLK, CS_HFXTCLK_SELECT, CS_CLOCK_DIVIDER_1);
-#else
-    // Set DCO Frequency
-    #if defined (CPU_FREQ_8M)
-    CS_setDCOFreq(CS_DCORSEL_0, CS_DCOFSEL_6); // 8MHz
-    #elif defined (CPU_FREQ_16M)
-    CS_setDCOFreq(CS_DCORSEL_1, CS_DCOFSEL_4); // 16MHz
-    #endif
-    CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
-    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
-#endif
-
-#ifdef USE_XT1
-    CS_turnOnLFXT(CS_LFXT_DRIVE_0);
-#endif
-
-#ifdef USE_XT2
-    CS_turnOnHFXT(CS_HFXT_DRIVE_16MHZ_24MHZ);
-#endif
 }
 
 /*
-static void button_55_irq(uint16_t msg)
+static void button_55_irq(uint32_t msg)
 {
     if (P5IN & BIT5) {
-        //sig2_off;
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, 0, TIMER_A2_EVENT_DISABLE);
         //tcounter++;
         //FRAMCtl_A_write8(&tcounter, (uint8_t *)(uintptr_t)HIGH_FRAM_START, 1);
         //FRAMCtl_A_write8(&tcounter, (uint8_t *)HIGH_FRAM_ADDR, 1);
     } else {
-        //sig2_on;
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, systime() + 100, TIMER_A2_EVENT_ENABLE);
     }
 }
 
-static void button_55_long_press_irq(uint16_t msg)
+static void button_55_long_press_irq(uint32_t msg)
 {
     uart0_print("PB55 long\r\n");
-    //sig2_off;
 }
 
-static void button_56_irq(uint16_t msg)
+static void button_56_irq(uint32_t msg)
 {
     if (P5IN & BIT6) {
         //sig0_off;
@@ -133,46 +88,38 @@ static void button_56_irq(uint16_t msg)
     }
 }
 
-static void button_56_long_press_irq(uint16_t msg)
+static void button_56_long_press_irq(uint32_t msg)
 {
     uart0_print("PB56 long\r\n");
 }
 */
 
-static void scheduler_irq(uint16_t msg)
+static void scheduler_irq(uint32_t msg)
 {
     timer_a2_scheduler_handler();
 }
 
-void zmodem_parse_input(void)
+static void uart0_rx_irq(uint32_t msg)
 {
-    //uint8_t c;
-    uint8_t i;
-    char *input = uart0_get_rx_buf();
-    
-    for (i=0; i<uart0_get_p(); i++) {
-        zrx_byte(input[i]);
-    }
-}
-
-static void uart0_rx_irq(uint16_t msg)
-{
+    uint8_t rx;
     uint8_t input_type = uart0_get_input_type();
     sig2_on;
 
     if (input_type == RX_USER) {
         parse_user_input();
     } else {
-        zmodem_parse_input();
+        // read the entire ringbuffer and send to zmodem parser
+        while (ringbuf_get(&rbrx, &rx)) {
+            sig3_on;
+            zrx_byte(rx);
+        }
     }
-    uart0_set_eol();
-    //uart0_set_input_type(RX_USER);
     sig2_off;
+    sig3_off;
 }
 
 void check_events(void)
 {
-    struct sys_messagebus *p = sys_messagebus_getp();
     uint32_t msg = SYS_MSG_NULL;
     uint16_t ev;
 
@@ -209,7 +156,6 @@ void check_events(void)
         }
         timer_a2_rst_event();
     }
-
     // timer_a2-based scheduler
     ev = timer_a2_get_event_schedule();
     if (ev) {
@@ -221,7 +167,6 @@ void check_events(void)
         }
         timer_a2_rst_event_schedule();
     }
-
     // push button P5.x
     if (port5_last_event) {
         if (port5_last_event & BIT5) {
@@ -234,13 +179,7 @@ void check_events(void)
         }
     }
 
-    while (p) {
-        // notify listener if he registered for any of these messages
-        if (msg & p->listens) {
-            p->fn(msg);
-        }
-        p = p->next;
-    }
+    eh_exec(msg);
 }
 
 int main(void)
@@ -249,15 +188,18 @@ int main(void)
     WDTCTL = WDTPW | WDTHOLD;
     main_init();
 
+    clock_port_init();
+    clock_init();
+
     fram_init();
 
     timer_a0_init();            // uart timeout
 //    timer_a1_init();            // interface - ccr1 - meas interval, ccr2 - blocking delay
     timer_a2_init();            // scheduler, systime()
+
     uart0_port_init();
     uart0_init();
-
-    uart3_init(BAUDRATE_57600);
+    uart0_set_rx_irq_handler(uart0_extra_irq_handler);
 
     // Disable the GPIO power-on default high-impedance mode to activate
     // previously configured port settings
@@ -269,15 +211,15 @@ int main(void)
     sig3_off;
     sig4_off;
 
-    sys_messagebus_register(&uart0_rx_irq, SYS_MSG_UART0_RX);
-    //sys_messagebus_register(&uart0_rx_irq, SYS_MSG_TIMERA0_CCR1);
-    //sys_messagebus_register(&button_55_irq, SYS_MSG_P55_INT);
-    //sys_messagebus_register(&button_56_irq, SYS_MSG_P56_INT);
+    eh_register(&uart0_rx_irq, SYS_MSG_UART0_RX);
+    //eh_register(&uart0_rx_irq, SYS_MSG_TIMERA0_CCR1);
+    //eh_register(&button_55_irq, SYS_MSG_P55_INT);
+    //eh_register(&button_56_irq, SYS_MSG_P56_INT);
 
-    //sys_messagebus_register(&button_55_long_press_irq, SYS_MSG_P55_TMOUT_INT);
-    //sys_messagebus_register(&button_56_long_press_irq, SYS_MSG_P56_TMOUT_INT);
+    //eh_register(&button_55_long_press_irq, SYS_MSG_P55_TMOUT_INT);
+    //eh_register(&button_56_long_press_irq, SYS_MSG_P56_TMOUT_INT);
 
-    sys_messagebus_register(&scheduler_irq, SYS_MSG_TIMERA2_CCR1);
+    eh_register(&scheduler_irq, SYS_MSG_TIMERA2_CCR1);
 
     // Reset IRQ flags
     P5IFG &= ~(BIT5 | BIT6);
@@ -311,7 +253,7 @@ int main(void)
 #pragma vector=PORT5_VECTOR
 __interrupt void port5_isr_handler(void)
 #elif defined(__GNUC__)
-void __attribute__ ((interrupt(PORT5_VECTOR))) port5_isr_handler(void)
+void __attribute__((interrupt(PORT5_VECTOR))) port5_isr_handler(void)
 #else
 #error Compiler not supported!
 #endif

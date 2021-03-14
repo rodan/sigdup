@@ -18,9 +18,9 @@ int fdout;
 #else
 #include "proj.h"
 #include "uart0.h"
+#include "uart0_extras.h"
 #include "fram_glue.h"
 #include "helper.h"
-#include "uart3.h"
 
 char z_buf[CONV_BASE_10_BUF_SZ];
 
@@ -541,13 +541,11 @@ uint8_t zmodem_file_write(void)
 #elif defined(HOST)
     err = write(fdout, zstate.buffer, zstate.datalen);
 #else
-    sig3_on;
     // FRAM
     err = fram_write(zstate.buffer, zstate.datalen);
     if (err == zstate.datalen) {
         err = 0;
     }
-    sig3_off;
 #endif
 
     if (err < 0)
@@ -599,7 +597,6 @@ uint8_t zmodem_close_file(void)
 // FIXME?
 void zmodem_process_zdata_data(void)
 {
-    //sig2_on;
     uint32_t offset = ((uint32_t) zstate.header[1]) +
         ((uint32_t) zstate.header[2] << 8) + ((uint32_t) zstate.header[3] << 16) + ((uint32_t) zstate.header[4] << 24);
 
@@ -622,11 +619,9 @@ void zmodem_process_zdata_data(void)
             zmodem_send_hex_header(ZACK | 0x80, header);
         }
     } else {
-        //sig4_on;
         zmodem_send_rpos();
         zmodem_enter_state(STATE_IDLE);
     }
-    //sig2_off;
 }
 
 void zmodem_process_zdata(void)
@@ -1077,7 +1072,6 @@ void zrx_byte(uint8_t byte)
             break;
         case STATE_DATA_ZBIN:
         case STATE_DATA_ZBIN32:
-            //sig4_on;
             if (zstate.count < BUFFER_SIZE)
                 zstate.buffer[zstate.count] = byte;
             zstate.count++;
@@ -1110,7 +1104,6 @@ void zrx_byte(uint8_t byte)
                 }
             }
             break;
-            //sig4_off;
         case STATE_DATA_ZBIN_ZCRCE:
         case STATE_DATA_ZBIN_ZCRCG:
         case STATE_DATA_ZBIN_ZCRCQ:
