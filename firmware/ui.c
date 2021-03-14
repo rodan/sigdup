@@ -22,7 +22,6 @@ void display_menu(void)
     uart0_print(" \e[33;1m?\e[0m    - show help\r\n");
     uart0_print(" \e[33;1msch\e[0m  - show schedule\r\n");
     uart0_print(" \e[33;1mread\e[0m - read HIFRAM\r\n");
-    uart0_print(" \e[33;1mgo\e[0m   - start transfer\r\n");
 }
 
 void display_DONE(void)
@@ -230,20 +229,42 @@ void parse_user_input(void)
         display_menu();
     } else if (strstr(input, "sch")) {
         display_schedule();
-    } else if (strstr(input, "read")) {
+#if 0
+    } else if (strstr(input, "!")) {
+        uart0_print("FRCTL0 ");
+        uart0_print(_utoh(itoa_buf, FRCTL0));
+        uart0_print("\r\n");
 
+        uart0_print("GCCTL0 ");
+        uart0_print(_utoh(itoa_buf, GCCTL0));
+        uart0_print("\r\n");
+
+        uart0_print("GCCTL1 ");
+        uart0_print(_utoh(itoa_buf, GCCTL1));
+        uart0_print("\r\n");
+
+        uart0_print("fram ");
+        uart0_print(_utoh(itoa_buf, *(uint8_t *)HIGH_FRAM_ADDR));
+        uart0_print("\r\n");
+
+
+        //FRAMCtl_A_write8(&c, (uint8_t *) HIGH_FRAM_START, &wcnt);
+        //fram_write(&c, wcnt);
+        *(uint8_t *)HIGH_FRAM_ADDR = 0x61;
+
+        uart0_print("fram ");
+        uart0_print(_utoh(itoa_buf, *(uint8_t *)HIGH_FRAM_ADDR));
+        uart0_print("\r\n");
+
+        display_DONE();
+#endif
+    } else if (strstr(input, "read")) {
         //fram_seek(hdr.start);
         //print_buf((uint8_t *)(uintptr_t) HIGH_FRAM_ADDR, 512);
         hdr = (fram_header *)(uintptr_t) HIGH_FRAM_ADDR;
         print_buf_fram(hdr->file_start, hdr->file_sz);
         //print_buf_fram(HIGH_FRAM_ADDR + 8, hdr->file_size);
-    } else if (f == 'a') {
-        //uart0_tx_str("123456789\r\n", 11);
-        uart0_print("123456789\r\n");
-    } else if (strstr(input, "go")) {
-        uart0_print("use zmodem to send file\r\n");
-        zmodem_init();
-        //uart0_set_input_type(RX_ZMODEM_HDR);
+        //print_buf_fram(HIGH_FRAM_ADDR, 64);
     }
 }
 

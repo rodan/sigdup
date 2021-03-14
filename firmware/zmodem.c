@@ -542,10 +542,12 @@ uint8_t zmodem_file_write(void)
     err = write(fdout, zstate.buffer, zstate.datalen);
 #else
     // FRAM
+    sig4_on;
     err = fram_write(zstate.buffer, zstate.datalen);
     if (err == zstate.datalen) {
         err = 0;
     }
+    sig4_off;
 #endif
 
     if (err < 0)

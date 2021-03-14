@@ -229,6 +229,8 @@ int main(void)
     // fake button interrupt so we read the battery voltage
     //button_31_irq(0);
 
+    display_menu();
+
     while (1) {
         // sleep
 #ifdef LED_SYSTEM_STATES

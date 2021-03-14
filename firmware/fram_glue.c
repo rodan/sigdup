@@ -5,6 +5,7 @@
 #include "proj.h"
 #include "driverlib.h"
 #include "fram_glue.h"
+#include "glue.h"
 
 #if defined (__TI_COMPILER_VERSION__)
 #pragma PERSISTENT(HIGH_FRAM_START)
@@ -21,10 +22,14 @@ fram_header fram_hdr;
 
 void fram_init(void)
 {
-#if defined (CPU_FREQ_16M)
-    // set WAIT states = 1
-    FRAMCtl_A_configureWaitStateControl(NWAITS_7);
-#endif
+    if (SMCLK_FREQ > 8000000) {
+        // set WAIT states = 1
+        //FRAMCtl_A_configureWaitStateControl(NWAITS_1);
+        FRCTL0 = FRCTLPW | NWAITS_1;
+        //FRCTL0 = FRCTLPW | AUTO;
+        GCCTL1 = 0;
+    }
+
     fram_ptr = (uint8_t *) HIGH_FRAM_START;
     memset(&fram_hdr, 0, sizeof(fram_hdr));
 }
