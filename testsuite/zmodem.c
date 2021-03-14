@@ -18,7 +18,12 @@ int fdout;
 #else
 #include "proj.h"
 #include "uart0.h"
+#include "uart0_extras.h"
 #include "fram_glue.h"
+#include "helper.h"
+
+char z_buf[CONV_BASE_10_BUF_SZ];
+
 #endif
 
 #ifdef USE_LFS
@@ -83,15 +88,10 @@ int fdout;
 struct {
     uint8_t active;
     uint8_t zdlecount;
-    //int zdlecount;
     uint16_t count;
-    //int count;
     uint8_t state;
-    //int state;
     uint8_t protostate;
-    //int protostate;
     uint16_t datalen;
-    //int datalen;
     uint8_t frametype;
     uint8_t escape_ctrl;
     uint8_t escape_bit8;
@@ -100,7 +100,6 @@ struct {
     uint32_t transferred;
     uint32_t total;
     uint16_t timeouts;
-    //int timeouts;
 #ifdef USE_LFS
     lfs_t *lfs;
     lfs_file_t *lfs_file;
@@ -187,6 +186,18 @@ void ztx_hexbyte(uint8_t byte)
     uint8_t b2 = byte & 0x0f;
     ztx_byte(hexencode(b1));
     ztx_byte(hexencode(b2));
+}
+
+uint32_t _atoi(char* str)
+{
+    uint8_t i;
+    uint32_t ret = 0;
+ 
+    for (i = 0; str[i] != '\0'; ++i) {
+        ret = ret * 10 + str[i] - '0';
+    }
+ 
+    return ret;
 }
 
 void zmodem_enter_state(const uint8_t state)
@@ -443,7 +454,7 @@ void zmodem_process_zfile_data(void)
     (void)rfilesp;
 
     if (rdatap) {
-        zstate.total = zstate.transferred + atoi(rdatap);
+        zstate.total = zstate.transferred + _atoi(rdatap);
     }
 
     /* Optional - send a ZRCRC to determine where to start from */
@@ -530,11 +541,11 @@ uint8_t zmodem_file_write(void)
 #elif defined(HOST)
     err = write(fdout, zstate.buffer, zstate.datalen);
 #else
-    sig3_on;
     // FRAM
-    fram_write(zstate.buffer, zstate.datalen);
-    err = 0;
-    sig3_off;
+    err = fram_write(zstate.buffer, zstate.datalen);
+    if (err == zstate.datalen) {
+        err = 0;
+    }
 #endif
 
     if (err < 0)
@@ -556,11 +567,9 @@ uint8_t zmodem_open_file(char *filename)
     // FRAM
     fram_init();
     fram_header hdr;
-    hdr.file_size = zstate.total;
-    fram_write_header(&hdr);
-    err = 0;
+    hdr.file_sz = zstate.total;
+    err = fram_write_header(&hdr);
 #endif
-    ZDEBUG("file sz %u %x\n", zstate.total, zstate.total);
 
     if (!err)
         zstate.fileopen = true;
@@ -588,7 +597,6 @@ uint8_t zmodem_close_file(void)
 // FIXME?
 void zmodem_process_zdata_data(void)
 {
-    //sig2_on;
     uint32_t offset = ((uint32_t) zstate.header[1]) +
         ((uint32_t) zstate.header[2] << 8) + ((uint32_t) zstate.header[3] << 16) + ((uint32_t) zstate.header[4] << 24);
 
@@ -596,7 +604,7 @@ void zmodem_process_zdata_data(void)
         zstate.fileoffset += zstate.datalen;
         /* XXX we may need to revisit this if we ever support resuming */
         zstate.transferred += zstate.datalen;
-        ZDEBUG("offset: %d, %d\n", offset, zstate.fileoffset);
+        ZDEBUG("offset: %u, %u\n", offset, zstate.fileoffset);
         uint8_t header[] = {
             offset & 0xff,
             (offset >> 8) & 0xff,
@@ -611,11 +619,9 @@ void zmodem_process_zdata_data(void)
             zmodem_send_hex_header(ZACK | 0x80, header);
         }
     } else {
-        //sig4_on;
         zmodem_send_rpos();
         zmodem_enter_state(STATE_IDLE);
     }
-    //sig2_off;
 }
 
 void zmodem_process_zdata(void)
@@ -644,7 +650,7 @@ void zmodem_process_zeof(void)
     if (zstate.protostate != PROTOSTATE_RX_TRANSFER)
         return;
 
-    ZDEBUG("EOF: %d, %d\n", offset, zstate.fileoffset);
+    ZDEBUG("EOF: %u, %u\n", offset, zstate.fileoffset);
 
     if (offset != zstate.fileoffset) {
         zmodem_enter_state(STATE_IDLE);
@@ -1066,7 +1072,6 @@ void zrx_byte(uint8_t byte)
             break;
         case STATE_DATA_ZBIN:
         case STATE_DATA_ZBIN32:
-            //sig4_on;
             if (zstate.count < BUFFER_SIZE)
                 zstate.buffer[zstate.count] = byte;
             zstate.count++;
@@ -1099,7 +1104,6 @@ void zrx_byte(uint8_t byte)
                 }
             }
             break;
-            //sig4_off;
         case STATE_DATA_ZBIN_ZCRCE:
         case STATE_DATA_ZBIN_ZCRCG:
         case STATE_DATA_ZBIN_ZCRCQ:

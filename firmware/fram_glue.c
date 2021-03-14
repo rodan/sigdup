@@ -35,12 +35,14 @@ int8_t fram_seek(const uint32_t rel_address)
     return EXIT_SUCCESS;
 }
 
+/*
 int16_t fram_read(uint8_t *buf, const uint16_t count)
 {
     buf = fram_ptr;
     fram_ptr += count;
     return EXIT_SUCCESS;
 }
+*/
 
 int16_t fram_write(uint8_t *buf, const uint16_t count)
 {

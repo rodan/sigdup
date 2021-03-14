@@ -2,14 +2,14 @@
 
 set -e
 
-TEST_ITER=10000
+TEST_ITER=1000
 TESTFILE_DIR='/tmp/lrzsz/testfiles'
 RECV_DIR='/tmp/lrzsz/recv'
 RECV_LOG='/tmp/lrzsz/recv/log'
 PIPE='/tmp/lrzsz/pipe'
 SZBIN='/usr/bin/lsz'
 #RZBIN='/usr/bin/lrz'
-RZBIN="./rz"
+RZBIN=`readlink -f ./rz`
 
 GOOD=$'\e[32;01m'
 WARN=$'\e[33;01m'

@@ -148,6 +148,12 @@ size: $(OBJ_DIR)/$(PROJ).elf
 debug: all
 	$(GDB) $(OBJ_DIR)/$(PROJ).elf
 
+scan-build: clean
+	@scan-build --use-cc=$(CC) --analyzer-target=msp430-elf --exclude ./driverlib/MSP430FR5xx_6xx make PARSER=scan-build
+
+cppcheck: clean
+	@cppcheck --quiet --force --enable=warning --enable=performance --enable=information --enable=missingInclude -I $(DRIVERLIB) -I $(GLUELIB) -I ./ ./
+
 $(EXOBJECT): $(PROJ_SRC) $(OBJ_DIR)/$(PROJ).cflags
 	@$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 

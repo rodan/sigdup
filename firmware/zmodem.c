@@ -604,7 +604,7 @@ void zmodem_process_zdata_data(void)
         zstate.fileoffset += zstate.datalen;
         /* XXX we may need to revisit this if we ever support resuming */
         zstate.transferred += zstate.datalen;
-        ZDEBUG("offset: %d, %d\n", offset, zstate.fileoffset);
+        ZDEBUG("offset: %u, %u\n", offset, zstate.fileoffset);
         uint8_t header[] = {
             offset & 0xff,
             (offset >> 8) & 0xff,
@@ -650,7 +650,7 @@ void zmodem_process_zeof(void)
     if (zstate.protostate != PROTOSTATE_RX_TRANSFER)
         return;
 
-    ZDEBUG("EOF: %d, %d\n", offset, zstate.fileoffset);
+    ZDEBUG("EOF: %u, %u\n", offset, zstate.fileoffset);
 
     if (offset != zstate.fileoffset) {
         zmodem_enter_state(STATE_IDLE);
