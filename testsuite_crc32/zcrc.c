@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include "zcrc.h"
-#include "config.h"
 
 static uint16_t crc16_table[] =
 {
@@ -24,10 +23,6 @@ static uint16_t crc16_table[] =
     0xf1ef
 };
 
-
-#ifdef HW_CRC32
-#include <msp430.h>
-#else
 static uint32_t crc32_table[] =
 {
     0x00000000,
@@ -47,7 +42,6 @@ static uint32_t crc32_table[] =
     0xA00AE278,
     0xBDBDF21C
 };
-#endif
 
 uint16_t crc16(const void *data, uint16_t length, uint16_t crc)
 {
@@ -61,29 +55,6 @@ uint16_t crc16(const void *data, uint16_t length, uint16_t crc)
     return crc;
 }
 
-#ifdef HW_CRC32
-uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
-{
-    const uint8_t *buffer = data;
-    uint16_t i;
-    crc = ~crc;
-
-    // this function is not able to continue on an already-calculated crc
-    CRC32INIRESW1 = (uint32_t) (crc >> 16) & 0x0000FFFF;
-    CRC32INIRESW0 = (uint32_t) crc & 0x0000FFFF;
-
-    for (i = 0; i < length; i++) {
-        CRC32DIW0_L = (uint16_t) *buffer;
-        buffer++;
-    }
-
-    crc = ((uint32_t) CRC32RESRW0 << 16);
-    crc = ((uint32_t) CRC32RESRW1 & 0x0000FFFF) | crc;
-
-    return ~crc;
-}
-
-#else
 uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
 {
     const uint8_t *buffer = data;
@@ -96,6 +67,3 @@ uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
     }
     return ~crc;
 }
-#endif
-
-

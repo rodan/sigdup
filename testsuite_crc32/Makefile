@@ -1,8 +1,8 @@
-PROG = rz
-OBJS = zcrc.o zmodem.o
+PROG = crc32
+OBJS = zcrc.o main.o
 
 CC = gcc
-CFLAGS= -Wall -DHOST -ggdb# -DDEBUG
+CFLAGS= -Wall -DHOST -ggdb #-DDEBUG
 LDFLAGS =
 
 .c.o:

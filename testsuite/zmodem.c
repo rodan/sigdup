@@ -109,7 +109,7 @@ struct {
     void (*process_data)(void);
     uint8_t header[5];
     uint8_t crc[4];
-    uint8_t buffer[BUFFER_SIZE];
+    uint8_t buffer[BUFFER_SIZE+1];
 } zstate;
 
 #define STATE_IDLE                0
@@ -1123,8 +1123,8 @@ void zrx_byte(uint8_t byte)
         case STATE_DATA_ZBIN32_ZCRCW:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 4) {
-                uint32_t crc = crc32(zstate.buffer, zstate.datalen, 0);
-                crc = crc32(&zstate.frametype, 1, crc);
+                zstate.buffer[zstate.datalen] = zstate.frametype;
+                uint32_t crc = crc32(zstate.buffer, zstate.datalen+1, 0);
                 uint32_t rxcrc = (uint32_t) zstate.crc[0] | ((uint32_t) zstate.crc[1] << 8) | ((uint32_t) zstate.crc[2] << 16) | ((uint32_t) zstate.crc[3] << 24);
                 ZDEBUG("CRC is %x, received %x, len is %d\n", crc, rxcrc, zstate.datalen);
                 //ZDEBUG("Buffer is %s\n", zstate.buffer);

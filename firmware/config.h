@@ -21,6 +21,10 @@
 //#define UART0_TXBUF_SZ 16
 //#define UART0_TX_USES_IRQ
 
+// hardware-based crc32 for 1024bytes takes 2.23ms @16MHz
+// software-based crc32 for the exact same data takes 14.89ms @16MHz
+#define HW_CRC32
+
 // enable in order to have the following led setup:
 // led 2 - on during timer interrupt operation
 // led 3 - on during meter uart operation
