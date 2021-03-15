@@ -79,10 +79,10 @@ int main(void)
     printf("crc32(in1) lrzsz result is  0x%x\r\n", crc32_lrzsz(in1, sizeof(in1), 0));
     printf("crc32(in2) lrzsz result is  0x%x\r\n", crc32_lrzsz(in2, sizeof(in2), 0));
 
-    test_crc32_res = crc32_lrzsz(in1, sizeof(in1), 0);
-    test_crc32_res = crc32_lrzsz(in2_extra, sizeof(in2_extra), test_crc32_res);
+    test_crc32_res = crc32_msp(in1, sizeof(in1), 0);
+    test_crc32_res = crc32_msp(in2_extra, sizeof(in2_extra), test_crc32_res);
 
-    printf("test result is  0x%x\r\n", test_crc32_res);
+    printf("result of continuation is   0x%x\r\n", test_crc32_res);
 
 }
 
