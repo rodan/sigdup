@@ -57,6 +57,11 @@ int16_t fram_write(uint8_t *buf, const uint16_t count)
     return count;
 }
 
+void fram_write_byte(uint8_t byte)
+{
+    *fram_ptr++ = byte;
+}
+
 int8_t fram_write_header(const fram_header *hdr)
 {
     uint16_t len = sizeof(fram_hdr);

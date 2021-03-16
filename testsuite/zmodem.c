@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "config.h"
 
 int fdout;
 
@@ -352,6 +353,9 @@ void zmodem_enter_data_state(void)
         zmodem_enter_state(STATE_DATA_ZBIN);
         break;
     case STATE_HEADER_ZBIN32_CRC:
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+        crc32bs_start(0);
+#endif
         zmodem_enter_state(STATE_DATA_ZBIN32);
         break;
     }
@@ -539,13 +543,22 @@ uint8_t zmodem_file_write(void)
 #if defined(USE_LFS)
     err = lfs_file_write(zstate.lfs, zstate.lfs_file, zstate.buffer, zstate.datalen);
 #elif defined(HOST)
+#ifndef ZMODEM_O_BYTESIZE_WRITE
     err = write(fdout, zstate.buffer, zstate.datalen);
 #else
+    err = 0;
+#endif
+#else
+
+#ifndef ZMODEM_O_BYTESIZE_WRITE
     // FRAM
     err = fram_write(zstate.buffer, zstate.datalen);
     if (err == zstate.datalen) {
         err = 0;
     }
+#else
+    err = 0;
+#endif
 #endif
 
     if (err < 0)
@@ -890,9 +903,10 @@ void zmodem_send_znak(void)
 
 void zmodem_process_data(uint8_t ok)
 {
-    uint16_t i;
+    //uint16_t i;
     ZDEBUG("Data received\n");
     ZDEBUG("CRC %s\n", ok ? "ok" : "not ok");
+/*    
     for (i = 0; i < zstate.datalen; i++) {
         ZDEBUG("%x ", zstate.buffer[i]);
         if ((i % 16) == 15) {
@@ -901,7 +915,7 @@ void zmodem_process_data(uint8_t ok)
     }
     if (zstate.count % 16)
         ZDEBUG("\n");
-
+*/
     zstate.ok = ok;
 
     switch (zstate.state) {
@@ -913,6 +927,9 @@ void zmodem_process_data(uint8_t ok)
         zmodem_enter_state(STATE_DATA_ZBIN);
         break;
     case STATE_DATA_ZBIN32_ZCRCG:
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+        crc32bs_start(0);
+#endif
         zmodem_enter_state(STATE_DATA_ZBIN32);
         break;
     case STATE_DATA_ZBIN_ZCRCQ:
@@ -933,7 +950,11 @@ void zmodem_process_data(uint8_t ok)
 
 void zrx_byte(uint8_t byte)
 {
-    ZDEBUG(" 0x%x ", byte);
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+    uint8_t keep_byte = 1;
+#endif
+
+    ZDEBUG(" >0x%x ", byte);
 
     if ((byte & 0x7f) == XON || (byte & 0x7f) == XOFF)
         return;
@@ -1072,37 +1093,69 @@ void zrx_byte(uint8_t byte)
             break;
         case STATE_DATA_ZBIN:
         case STATE_DATA_ZBIN32:
-            if (zstate.count < BUFFER_SIZE)
+            if (zstate.count < BUFFER_SIZE) {
                 zstate.buffer[zstate.count] = byte;
+            }
             zstate.count++;
             if (zstate.zdlecount) {
                 switch (byte) {
                 case ZCRCE:
                     zstate.datalen = zstate.count - 1;
                     zstate.frametype = byte;
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+                    keep_byte = 0;
+#endif
                     zmodem_enter_state((zstate.state ==
                                         STATE_DATA_ZBIN32) ? STATE_DATA_ZBIN32_ZCRCE : STATE_DATA_ZBIN_ZCRCE);
                     break;
                 case ZCRCG:
                     zstate.datalen = zstate.count - 1;
                     zstate.frametype = byte;
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+                    keep_byte = 0;
+#endif
                     zmodem_enter_state((zstate.state ==
                                         STATE_DATA_ZBIN32) ? STATE_DATA_ZBIN32_ZCRCG : STATE_DATA_ZBIN_ZCRCG);
                     break;
                 case ZCRCQ:
                     zstate.datalen = zstate.count - 1;
                     zstate.frametype = byte;
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+                    keep_byte = 0;
+#endif
                     zmodem_enter_state((zstate.state ==
                                         STATE_DATA_ZBIN32) ? STATE_DATA_ZBIN32_ZCRCQ : STATE_DATA_ZBIN_ZCRCQ);
                     break;
                 case ZCRCW:
                     zstate.datalen = zstate.count - 1;
                     zstate.frametype = byte;
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+                    keep_byte = 0;
+#endif
                     zmodem_enter_state((zstate.state ==
                                         STATE_DATA_ZBIN32) ? STATE_DATA_ZBIN32_ZCRCW : STATE_DATA_ZBIN_ZCRCW);
                     break;
+                default:
+
+
+                    break;
                 }
             }
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+            if (keep_byte) {
+#ifdef ZMODEM_O_BYTESIZE_WRITE
+                if (zstate.protostate == PROTOSTATE_RX_TRANSFER) {
+#ifdef HOST
+                    write(fdout, &byte, 1); 
+#else
+                    // save byte to FRAM
+                    fram_write_byte(byte);
+#endif
+                }
+#endif
+                crc32bs_upd(byte);
+            }
+#endif
             break;
         case STATE_DATA_ZBIN_ZCRCE:
         case STATE_DATA_ZBIN_ZCRCG:
@@ -1123,11 +1176,35 @@ void zrx_byte(uint8_t byte)
         case STATE_DATA_ZBIN32_ZCRCW:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 4) {
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+                crc32bs_upd(zstate.frametype);
+                uint32_t crc = crc32bs_end();
+#else
                 zstate.buffer[zstate.datalen] = zstate.frametype;
                 uint32_t crc = crc32(zstate.buffer, zstate.datalen+1, 0);
+#endif
+                //crc = crc32(&zstate.frametype, 1, crc);
                 uint32_t rxcrc = (uint32_t) zstate.crc[0] | ((uint32_t) zstate.crc[1] << 8) | ((uint32_t) zstate.crc[2] << 16) | ((uint32_t) zstate.crc[3] << 24);
                 ZDEBUG("CRC is %x, received %x, len is %d\n", crc, rxcrc, zstate.datalen);
+#if 0
+                uint16_t i;
+                ZDEBUG("buffer was \r\n");
+                for (i=0;i<zstate.datalen;i++) {
+                    ZDEBUG("%x ", zstate.buffer[i]);
+                    if ((i & 0xf) == 0xf) {
+                        ZDEBUG("\r\n");
+                    }
+                }
+                ZDEBUG("\r\n frametype %02x\r\n", zstate.frametype);
                 //ZDEBUG("Buffer is %s\n", zstate.buffer);
+#endif
+#ifdef __MSP430__
+                if (crc == rxcrc) {
+                    sig1_on;
+                } else {
+                    sig0_on;
+                }
+#endif
                 zmodem_process_data(crc == rxcrc);
             }
             break;

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "config.h"
 #include "zcrc.h"
 
 #define  POLYNOMIAL_32    0xEDB88320
@@ -43,7 +44,10 @@ int main(void)
     uint32_t lib_crc32_res = 0;
     uint32_t msp_crc32_res = 0;
     uint32_t lrzsz_crc32_res = 0;
-    uint32_t test_crc32_res = 0;
+    uint32_t crc32_test0 = 0;
+    uint32_t crc32_test1 = 0;
+    uint32_t crc32_test2 = 0;
+    uint32_t crc32_test3 = 0;
     uint16_t i;
 
     initSwCrc32Table();
@@ -57,6 +61,7 @@ int main(void)
         // Calculate the CRC32 on the low-byte first
         msp_crc32_res = updateSwCrc32(msp_crc32_res, (in1[i]));
     }
+    msp_crc32_res = ~msp_crc32_res;
 
     // lrzsz crc32
     lrzsz_crc32_res = CRC_Init;
@@ -64,6 +69,7 @@ int main(void)
         // Calculate the CRC32 on the low-byte first
         lrzsz_crc32_res = UPDC32((in1[i]), lrzsz_crc32_res);
     }
+    lrzsz_crc32_res = ~lrzsz_crc32_res;
 
 #ifdef SHOW_TABLE
     for (i = 0; i < 256; i++) {
@@ -74,15 +80,39 @@ int main(void)
     }
 #endif
 
-    printf("crc32(in1) lib result is    0x%x\r\n", lib_crc32_res);
-    printf("crc32(in1) 430 result is    0x%x\r\n", crc32_msp(in1, sizeof(in1), 0));
-    printf("crc32(in1) lrzsz result is  0x%x\r\n", crc32_lrzsz(in1, sizeof(in1), 0));
-    printf("crc32(in2) lrzsz result is  0x%x\r\n", crc32_lrzsz(in2, sizeof(in2), 0));
+    // test0
+    crc32_test0 = crc32_msp(in1, sizeof(in1), 0);
+    crc32_test0 = crc32_msp(in2_extra, sizeof(in2_extra), crc32_test0);
 
-    test_crc32_res = crc32_msp(in1, sizeof(in1), 0);
-    test_crc32_res = crc32_msp(in2_extra, sizeof(in2_extra), test_crc32_res);
+    // test1
+    crc32_test1 = crc32(in1, sizeof(in1), 0);
+    crc32_test1 = crc32(in2_extra, 1, crc32_test1);
 
-    printf("result of continuation is   0x%x\r\n", test_crc32_res);
+    // test2
+    crc32_test2 = crc32(in1, sizeof(in1), 0);
+    crc32bs_start(crc32_test2);
+    crc32bs_upd(in2_extra[0]);
+    crc32_test2 = crc32bs_end();
+
+    // test3
+    crc32bs_start(0);
+    for (i=0;i<sizeof(in2);i++) {
+        crc32bs_upd(in2[i]);
+    }
+    crc32_test3 = crc32bs_end();
+
+    printf("\r\nthe following tests should return 0x9be3e0a3:\r\n");
+    printf("crc32(in1) lib result is       0x%x\r\n", lib_crc32_res);
+    printf("crc32(in1) m1 430 result is    0x%x\r\n", msp_crc32_res);
+    printf("crc32(in1) m2 430 result is    0x%x\r\n", crc32_msp(in1, sizeof(in1), 0));
+    printf("crc32(in1) m1 lrzsz result is  0x%x\r\n", lrzsz_crc32_res);
+    printf("crc32(in1) m2 lrzsz result is  0x%x\r\n", crc32_lrzsz(in1, sizeof(in1), 0));
+    printf("\r\nthe following tests should return 0xcbf53a1c:\r\n");
+    printf("crc32(in2) m2 lrzsz result is  0x%x\r\n", crc32_lrzsz(in2, sizeof(in2), 0));
+    printf("result of test0 is             0x%x\r\n", crc32_test0);
+    printf("result of test1 is             0x%x\r\n", crc32_test1);
+    printf("result of test2 is             0x%x\r\n", crc32_test2);
+    printf("result of test3 is             0x%x\r\n", crc32_test3);
 
 }
 

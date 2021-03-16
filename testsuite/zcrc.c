@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include "zcrc.h"
+#include "config.h"
 
 static uint16_t crc16_table[] =
 {
@@ -23,6 +24,10 @@ static uint16_t crc16_table[] =
     0xf1ef
 };
 
+
+#ifdef HW_CRC32
+#include <msp430.h>
+#else
 static uint32_t crc32_table[] =
 {
     0x00000000,
@@ -42,8 +47,13 @@ static uint32_t crc32_table[] =
     0xA00AE278,
     0xBDBDF21C
 };
+#endif
 
-uint16_t crc16(const void *data, int length, uint16_t crc)
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+uint32_t bytesize_crc;
+#endif
+
+uint16_t crc16(const void *data, uint16_t length, uint16_t crc)
 {
     const uint8_t *buffer = data;
     while (length--)
@@ -55,7 +65,57 @@ uint16_t crc16(const void *data, int length, uint16_t crc)
     return crc;
 }
 
-uint32_t crc32(const void *data, int length, uint32_t crc)
+#ifdef HW_CRC32
+uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
+{
+    const uint8_t *buffer = data;
+    uint16_t i;
+    crc = ~crc;
+
+    // this function is not able to resume crc32 calculation based on the third input option
+    CRC32INIRESW1 = (uint32_t) (crc >> 16) & 0x0000FFFF;
+    CRC32INIRESW0 = (uint32_t) crc & 0x0000FFFF;
+
+    for (i = 0; i < length; i++) {
+        CRC32DIW0_L = (uint16_t) *buffer;
+        buffer++;
+    }
+
+    crc = ((uint32_t) CRC32RESRW0 << 16);
+    crc = ((uint32_t) CRC32RESRW1 & 0x0000FFFF) | crc;
+
+    return ~crc;
+}
+
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+void crc32bs_start(const uint32_t seed)
+{
+    uint32_t _seed;
+    _seed = ~seed;
+
+    // the seed cannot be used to resume a crc calculation
+    CRC32INIRESW1 = (uint32_t) (_seed >> 16) & 0x0000FFFF;
+    CRC32INIRESW0 = (uint32_t) _seed & 0x0000FFFF;
+}
+
+void crc32bs_upd(const uint8_t c)
+{
+    CRC32DIW0_L = (uint16_t) c;
+}
+
+uint32_t crc32bs_end(void)
+{
+    uint32_t res;
+
+    res = ((uint32_t) CRC32RESRW0 << 16);
+    res = ((uint32_t) CRC32RESRW1 & 0x0000FFFF) | res;
+
+    return ~res;
+}
+#endif
+
+#else
+uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
 {
     const uint8_t *buffer = data;
     crc = ~crc;
@@ -67,3 +127,28 @@ uint32_t crc32(const void *data, int length, uint32_t crc)
     }
     return ~crc;
 }
+
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+void crc32bs_start(const uint32_t seed)
+{
+    bytesize_crc = seed;
+}
+
+void crc32bs_upd(const uint8_t c)
+{
+    uint8_t buf;
+    buf = c;
+    bytesize_crc = crc32(&buf, 1, bytesize_crc);
+}
+
+uint32_t crc32bs_end(void)
+{
+    return bytesize_crc;
+}
+#endif
+
+
+
+#endif
+
+

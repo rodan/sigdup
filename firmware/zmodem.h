@@ -6,8 +6,11 @@
 #define ZPAD 0x2a
 #define ZDLE 0x18
 
+#ifdef ZMODEM_O_BYTESIZE_WRITE
+#define ZMODEM_BUFFER_SIZE 128
+#else
 #define ZMODEM_BUFFER_SIZE 1024
-#define ZMODEM_TIMEOUT 10 /* seconds */
+#endif
 
 #ifdef USE_LFS
 void *zmodem_init(lfs_t *lfs, lfs_file_t *lfs_file);

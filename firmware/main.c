@@ -103,19 +103,15 @@ static void uart0_rx_irq(uint32_t msg)
 {
     uint8_t rx;
     uint8_t input_type = uart0_get_input_type();
-    sig2_on;
 
     if (input_type == RX_USER) {
         parse_user_input();
     } else {
         // read the entire ringbuffer and send to zmodem parser
         while (ringbuf_get(&rbrx, &rx)) {
-            sig3_on;
             zrx_byte(rx);
         }
     }
-    sig2_off;
-    sig3_off;
 }
 
 void check_events(void)
@@ -234,11 +230,11 @@ int main(void)
     while (1) {
         // sleep
 #ifdef LED_SYSTEM_STATES
-        //sig4_off;
+        sig4_off;
 #endif
         _BIS_SR(LPM3_bits + GIE);
 #ifdef LED_SYSTEM_STATES
-        //sig4_on;
+        sig4_on;
 #endif
         __no_operation();
 //#ifdef USE_WATCHDOG

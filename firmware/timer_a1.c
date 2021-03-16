@@ -28,9 +28,9 @@ void timer_a1_init(void)
     __disable_interrupt();
     timer_a1_ovf = 0;
     TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide SMCLK by 8
-#if defined (CPU_FREQ_8M)
+#if defined (SMCLK_FREQ_8M)
     TA1EX0 = TAIDEX_3; // further divide SMCLK by 4
-#elif defined (CPU_FREQ_16M)
+#elif defined (SMCLK_FREQ_16M)
     TA0EX0 = TAIDEX_7; // further divide SMCLK by 8
 #endif
     __enable_interrupt();

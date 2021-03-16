@@ -35,9 +35,9 @@ void timer_a0_init(void)
     timer_a0_ovf = 0;
     timer_a0_ccr2_extra_ticks = 0;
     TA0CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide SMCLK by 8
-#if defined (CPU_FREQ_8M) 
+#if defined (SMCLK_FREQ_8M) 
     TA0EX0 = TAIDEX_3; // further divide SMCLK by 4
-#elif defined (CPU_FREQ_16M)
+#elif defined (SMCLK_FREQ_16M)
     TA0EX0 = TAIDEX_7; // further divide SMCLK by 8
 #endif
     __enable_interrupt();
