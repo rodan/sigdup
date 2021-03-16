@@ -1,4 +1,4 @@
-PROG = crc32
+PROG = crc
 OBJS = zcrc.o main.o
 
 CC = gcc

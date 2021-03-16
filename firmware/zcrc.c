@@ -4,6 +4,9 @@
 #include "zcrc.h"
 #include "config.h"
 
+#ifdef HW_CRC16
+#include <msp430.h>
+#else
 static uint16_t crc16_table[] =
 {
     0x0000,
@@ -23,7 +26,7 @@ static uint16_t crc16_table[] =
     0xe1ce,
     0xf1ef
 };
-
+#endif
 
 #ifdef HW_CRC32
 #include <msp430.h>
@@ -49,10 +52,51 @@ static uint32_t crc32_table[] =
 };
 #endif
 
-#ifdef ZMODEM_O_BYTESIZE_CRC32
-uint32_t bytesize_crc;
+#ifdef ZMODEM_O_BYTESIZE_CRC16
+uint16_t bytesize_crc16;
 #endif
 
+#ifdef ZMODEM_O_BYTESIZE_CRC32
+uint32_t bytesize_crc32;
+#endif
+
+#ifdef HW_CRC16
+uint16_t crc16(const void *data, uint16_t length, uint16_t crc)
+{
+    const uint8_t *buffer = data;
+    uint16_t i;
+
+    CRC16INIRESW0 = crc;
+
+    for (i = 0; i < length; i++) {
+        CRC16DIRBW0_L = (uint8_t) *buffer;
+        buffer++;
+    }
+
+    crc = CRC16INIRESW0;
+
+    return crc;
+}
+
+#ifdef ZMODEM_O_BYTESIZE_CRC16
+void crc16bs_start(const uint16_t seed)
+{    
+    CRC16INIRESW0 = seed;
+}
+
+void crc16bs_upd(const uint8_t c)
+{
+    CRC16DIRBW0_L = c;
+}
+
+uint16_t crc16bs_end(void)
+{
+    return CRC16INIRESW0;
+}
+#endif
+
+
+#else
 uint16_t crc16(const void *data, uint16_t length, uint16_t crc)
 {
     const uint8_t *buffer = data;
@@ -64,6 +108,28 @@ uint16_t crc16(const void *data, uint16_t length, uint16_t crc)
     }
     return crc;
 }
+
+#ifdef ZMODEM_O_BYTESIZE_CRC16
+void crc16bs_start(const uint16_t seed)
+{
+    bytesize_crc16 = seed;
+}
+
+void crc16bs_upd(const uint8_t c)
+{
+    uint8_t buf;
+    buf = c;
+    bytesize_crc16 = crc16(&buf, 1, bytesize_crc16);
+}
+
+uint16_t crc16bs_end(void)
+{
+    return bytesize_crc16;
+}
+#endif
+
+
+#endif
 
 #ifdef HW_CRC32
 uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
@@ -131,19 +197,19 @@ uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
 #ifdef ZMODEM_O_BYTESIZE_CRC32
 void crc32bs_start(const uint32_t seed)
 {
-    bytesize_crc = seed;
+    bytesize_crc32 = seed;
 }
 
 void crc32bs_upd(const uint8_t c)
 {
     uint8_t buf;
     buf = c;
-    bytesize_crc = crc32(&buf, 1, bytesize_crc);
+    bytesize_crc32 = crc32(&buf, 1, bytesize_crc32);
 }
 
 uint32_t crc32bs_end(void)
 {
-    return bytesize_crc;
+    return bytesize_crc32;
 }
 #endif
 

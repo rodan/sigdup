@@ -8,10 +8,12 @@
 
 #ifdef ZMODEM_O_BYTESIZE_WRITE
 // this version of the buffer only needs to hold zmodem headers
-#define ZMODEM_BUFFER_SIZE 128
+#define ZMODEM_BUFFER_SIZE  128
+#define  ZMODEM_FRAME_SIZE  1024
 #else
 // this version of the buffer holds zmodem headers and the 1kbyte data block
-#define ZMODEM_BUFFER_SIZE 1024
+#define ZMODEM_BUFFER_SIZE  1024
+#define  ZMODEM_FRAME_SIZE  ZMODEM_BUFFER_SIZE
 #endif
 
 #ifdef USE_LFS

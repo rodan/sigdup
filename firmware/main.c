@@ -108,7 +108,7 @@ static void uart0_rx_irq(uint32_t msg)
         parse_user_input();
     } else {
         // read the entire ringbuffer and send to zmodem parser
-        while (ringbuf_get(&rbrx, &rx)) {
+        while (ringbuf_get(&uart0_rbrx, &rx)) {
             zrx_byte(rx);
         }
     }
@@ -196,6 +196,9 @@ int main(void)
     uart0_port_init();
     uart0_init();
     uart0_set_rx_irq_handler(uart0_extra_irq_handler);
+
+    //uart3_port_init();
+    //uart3_init();
 
     // Disable the GPIO power-on default high-impedance mode to activate
     // previously configured port settings

@@ -39,7 +39,7 @@ uint8_t uart0_extra_irq_handler(const uint8_t c)
             return UART_RET_SLEEP;
         }
 
-        if (!ringbuf_put(&rbrx, c)) {
+        if (!ringbuf_put(&uart0_rbrx, c)) {
             // the ringbuffer is full
             uart0_rx_err++;
             ret_type = UART_RET_WAKE;
@@ -55,7 +55,7 @@ uint8_t uart0_extra_irq_handler(const uint8_t c)
 
     } else if (uart0_input_type == RX_ZMODEM_HDR) {
         // zmodem header frames
-        if (!ringbuf_put(&rbrx, c)) {
+        if (!ringbuf_put(&uart0_rbrx, c)) {
             // the ringbuffer is full
             uart0_rx_err++;
         }

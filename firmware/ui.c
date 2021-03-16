@@ -22,6 +22,7 @@ void display_menu(void)
     uart0_print(" \e[33;1m?\e[0m    - show help\r\n");
     uart0_print(" \e[33;1msch\e[0m  - show schedule\r\n");
     uart0_print(" \e[33;1mread\e[0m - read HIFRAM\r\n");
+    uart0_print(" \e[33;1mpeek\e[0m - peek HIFRAM\r\n");
 }
 
 void display_DONE(void)
@@ -209,7 +210,7 @@ void parse_user_input(void)
     memset(input, 0, PARSER_CNT);
 
     // read the entire ringbuffer
-    while (ringbuf_get(&rbrx, &rx)) {
+    while (ringbuf_get(&uart0_rbrx, &rx)) {
         if (c < PARSER_CNT-1) {
             input[c] = rx;
         }
@@ -227,13 +228,14 @@ void parse_user_input(void)
 
     if (f == '?') {
         display_menu();
-    } else if (f == 's') {
+    } else if (strstr(input, "sch")) {
         display_schedule();
-    } else if (f == 'r') {
+    } else if (strstr(input, "peek")) {
+        print_buf_fram(HIGH_FRAM_ADDR, 256);
+    } else if (strstr(input, "read")) {
         hdr = (fram_header *)(uintptr_t) HIGH_FRAM_ADDR;
         print_buf_fram(hdr->file_start, hdr->file_sz);
         //print_buf_fram(HIGH_FRAM_ADDR + 8, hdr->file_size);
-        //print_buf_fram(HIGH_FRAM_ADDR, 64);
     }
 }
 
