@@ -1,0 +1,11 @@
+tests that compare different implementations of crc32
+
+zcrc - software-based crc library
+source: https://github.com/gavanfantom/hello-firmware
+
+lrzsz - software-based crc from the lrzsz package 
+source: https://www.ohse.de/uwe/software/lrzsz.html
+
+msp - a software-based crc that simulates the hardware crc32 from within MSP430 microcontrollers 
+source: http://www.ti.com/lit/zip/slac710
+
