@@ -7,8 +7,10 @@
 #define ZDLE 0x18
 
 #ifdef ZMODEM_O_BYTESIZE_WRITE
+// this version of the buffer only needs to hold zmodem headers
 #define ZMODEM_BUFFER_SIZE 128
 #else
+// this version of the buffer holds zmodem headers and the 1kbyte data block
 #define ZMODEM_BUFFER_SIZE 1024
 #endif
 

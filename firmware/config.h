@@ -23,7 +23,7 @@
 
 // hardware-based crc32 for 1024bytes takes 2.23ms @16MHz
 // software-based crc32 for the exact same data takes 14.89ms @16MHz
-//#define HW_CRC32
+#define HW_CRC32
 
 // calculate the crc32 after each received byte instead of at the end of the frame
 #define ZMODEM_O_BYTESIZE_CRC32
