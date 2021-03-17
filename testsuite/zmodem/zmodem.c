@@ -288,12 +288,21 @@ void zmodem_send_hex_header(const uint8_t type, void *data);
 
 void zmodem_send_zrinit(void)
 {
+#ifdef ZMODEM_SEGMENTED_STREAMING
     uint8_t header[] = {
         ZMODEM_FRAME_SIZE & 0xff,
         ZMODEM_FRAME_SIZE >> 8,
         0,
         ZF0_CANFC32
+	};
+#else
+    uint8_t header[] = {
+        0,
+        0,
+        0,
+        ZF0_CANFC32	| ZF0_CANOVIO
     };
+#endif
     zstate.active = true;
     zmodem_send_hex_header(ZRINIT, header);
     zmodem_enter_state(STATE_IDLE);
@@ -579,30 +588,35 @@ uint8_t zmodem_close_file(void)
     return !err;
 }
 
-// FIXME?
 void zmodem_process_zdata_data(void)
 {
-    uint32_t offset = ((uint32_t) zstate.header[1]) +
-        ((uint32_t) zstate.header[2] << 8) + ((uint32_t) zstate.header[3] << 16) + ((uint32_t) zstate.header[4] << 24);
-
     if (zstate.ok && zmodem_file_write()) {
         zstate.fileoffset += zstate.datalen;
         /* XXX we may need to revisit this if we ever support resuming */
         zstate.transferred += zstate.datalen;
-        ZDEBUG("offset: %u, %u\n", offset, zstate.fileoffset);
-        uint8_t header[] = {
-            offset & 0xff,
-            (offset >> 8) & 0xff,
-            (offset >> 16) & 0xff,
-            (offset >> 24) & 0xff
-        };
-        switch (zstate.state) {
-        case STATE_DATA_ZBIN_ZCRCQ:
-        case STATE_DATA_ZBIN_ZCRCW:
-        case STATE_DATA_ZBIN32_ZCRCQ:
-        case STATE_DATA_ZBIN32_ZCRCW:
-            zmodem_send_hex_header(ZACK | 0x80, header);
-        }
+		ZDEBUG("zstate.state %d\r\nzstate.frametype %x\r\n", zstate.state, zstate.frametype);
+		// after a ZCRCQ/ZCRCW frame is received zstate.state gets reset to 0, so the 
+		// old switch() based on state never gets to send out the ZACK headers
+		switch (zstate.frametype) {
+		case ZCRCQ:
+		case ZCRCW:
+			if (zstate.fileoffset != zstate.total) {
+				uint8_t header[] = {
+					zstate.fileoffset & 0xff,
+					(zstate.fileoffset >> 8) & 0xff,
+					(zstate.fileoffset >> 16) & 0xff,
+					(zstate.fileoffset >> 24) & 0xff
+				}; 
+				zmodem_send_hex_header(ZACK, header);
+			}
+			break;
+		case ZCRCG:
+		case ZCRCE:
+			// no response is needed unless an error is detected
+			break;
+		default:
+			break;
+		}
     } else {
         zmodem_send_rpos();
         zmodem_enter_state(STATE_IDLE);
@@ -929,7 +943,7 @@ void zrx_byte(uint8_t byte)
     uint8_t keep_byte = 1;
 #endif
 
-    ZDEBUG(" >0x%x ", byte);
+    ZDEBUG(" %02x", byte);
 
     if ((byte & 0x7f) == XON || (byte & 0x7f) == XOFF)
         return;
@@ -1132,7 +1146,11 @@ void zrx_byte(uint8_t byte)
 #endif
                 }
 #endif
-                crc32bs_upd(byte);
+                if (zstate.state == STATE_DATA_ZBIN32) {
+					crc32bs_upd(byte);
+				} else {
+					crc16bs_upd(byte);
+				}
             }
 #endif
             break;
@@ -1148,7 +1166,6 @@ void zrx_byte(uint8_t byte)
 #else
                 zstate.buffer[zstate.datalen] = zstate.frametype;
                 uint16_t crc = crc16(zstate.buffer, zstate.datalen+1, 0);
-                //crc = crc16(&zstate.frametype, 1, crc);
 #endif
                 uint16_t rxcrc = zstate.crc[1] | (zstate.crc[0] << 8);
                 ZDEBUG("CRC is %x, received %x, len is %d\n", crc, rxcrc, zstate.datalen);
@@ -1159,6 +1176,14 @@ void zrx_byte(uint8_t byte)
                     sig0_on;
                 }
 #endif
+/*
+				uint16_t i;
+				ZDEBUG("checked the following:\r\n");
+				for (i=0;i<zstate.datalen+1;i++) {
+					ZDEBUG(" %02x", zstate.buffer[i]);
+				}
+				ZDEBUG("\r\n");
+*/
                 zmodem_process_data(crc == rxcrc);
             }
             break;

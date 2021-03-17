@@ -5,13 +5,13 @@ CC = gcc
 CFLAGS= -Wall -DHOST -ggdb
 LDFLAGS =
 
-.c.o:
+.c.o: config.h
 	$(CC) -c $(CFLAGS) $*.c
 
-$(PROG): tags $(OBJS)
+$(PROG): tags $(OBJS) config.h
 	$(CC) $(LDFLAGS) -lutil -o $(PROG) $(OBJS) $(LIBS)
 
-tags:
+tags: config.h
 	@exuberant-ctags -R *
 
 scan-build: clean
