@@ -19,6 +19,7 @@ int fdout;
 #else
 #include "proj.h"
 #include "uart0.h"
+#include "uart3.h"
 #include "uart0_extras.h"
 #include "fram_glue.h"
 #include "helper.h"
@@ -194,8 +195,12 @@ uint32_t _atoi(char* str)
     uint8_t i;
     uint32_t ret = 0;
  
-    for (i = 0; str[i] != '\0'; ++i) {
-        ret = ret * 10 + str[i] - '0';
+    for (i = 0; (str[i] != '\0') && (str[i] != 0x20) && (i < 7); ++i) {
+		if ((str[i] > 0x29) && (str[i] < 0x40)) {
+        	ret = ret * 10 + str[i] - '0';
+		} else {
+			return ret;
+		}
     }
  
     return ret;
@@ -284,8 +289,8 @@ void zmodem_send_hex_header(const uint8_t type, void *data);
 void zmodem_send_zrinit(void)
 {
     uint8_t header[] = {
-        BUFFER_SIZE & 0xff,
-        BUFFER_SIZE >> 8,
+        ZMODEM_FRAME_SIZE & 0xff,
+        ZMODEM_FRAME_SIZE >> 8,
         0,
         ZF0_CANFC32
     };
@@ -350,6 +355,9 @@ void zmodem_enter_data_state(void)
         zmodem_enter_state(STATE_DATA_ZBIN);
         break;
     case STATE_HEADER_ZBIN_CRC:
+#ifdef ZMODEM_O_BYTESIZE_CRC16
+        crc16bs_start(0);
+#endif
         zmodem_enter_state(STATE_DATA_ZBIN);
         break;
     case STATE_HEADER_ZBIN32_CRC:
@@ -408,63 +416,27 @@ void zmodem_process_zfile_data(void)
 
     char *filenamep = (char *)zstate.buffer;
     int filenamelen = strlen(filenamep);
-    char *lengthp = filenamep + filenamelen + 1;
+    char *filesize = filenamep + filenamelen + 1;
 
     /* Check that we have at least one more null terminator */
     if (filenamelen + 1 >= zstate.datalen)
         return;
 
-    char *pch = strtok(lengthp, " ");
-
-    char *mdatep = NULL;
-    char *modep = NULL;
-    char *serialp = NULL;
-    char *rfilesp = NULL;
-    char *rdatap = NULL;
-
-    if (pch != NULL) {
-        /* lengthp */
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        mdatep = pch;
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        modep = pch;
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        serialp = pch;
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        rfilesp = pch;
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        rdatap = pch;
-        //pch = strtok(NULL, " ");
-    }
-
-    (void)mdatep;
-    (void)modep;
-    (void)serialp;
-    (void)rfilesp;
-
-    if (rdatap) {
-        zstate.total = zstate.transferred + _atoi(rdatap);
-    }
+    zstate.total = zstate.transferred + _atoi(filesize);
 
     /* Optional - send a ZRCRC to determine where to start from */
 
     ZDEBUG("Got filename: %s, sz %u\n", zstate.buffer, zstate.total);
     zstate.fileoffset = 0;
+
+    if ((zstate.total < FILE_MIN_SZ) || (zstate.total > FILE_MAX_SZ)) {
+        ZDEBUG("! skipping, wrong size \n");
+        uint8_t header[] = { 0, 0, 0, 0 };
+        /* ZSKIP or ZFERR? */
+        zmodem_send_hex_header(ZSKIP, header);
+        return;
+    }
+
     if (zmodem_open_file((char *)zstate.buffer)) {
         zmodem_enter_protostate(PROTOSTATE_RX_TRANSFER);
         zmodem_send_rpos();
@@ -924,6 +896,9 @@ void zmodem_process_data(uint8_t ok)
         zmodem_enter_state(STATE_IDLE);
         break;
     case STATE_DATA_ZBIN_ZCRCG:
+#ifdef ZMODEM_O_BYTESIZE_CRC16
+        crc16bs_start(0);
+#endif
         zmodem_enter_state(STATE_DATA_ZBIN);
         break;
     case STATE_DATA_ZBIN32_ZCRCG:
@@ -950,7 +925,7 @@ void zmodem_process_data(uint8_t ok)
 
 void zrx_byte(uint8_t byte)
 {
-#ifdef ZMODEM_O_BYTESIZE_CRC32
+#if defined(ZMODEM_O_BYTESIZE_CRC32) || defined(ZMODEM_O_BYTESIZE_CRC16)
     uint8_t keep_byte = 1;
 #endif
 
@@ -1093,7 +1068,11 @@ void zrx_byte(uint8_t byte)
             break;
         case STATE_DATA_ZBIN:
         case STATE_DATA_ZBIN32:
+#ifdef ZMODEM_O_BYTESIZE_WRITE
+            if ((zstate.count < BUFFER_SIZE) && (zstate.protostate != PROTOSTATE_RX_TRANSFER)) {
+#else
             if (zstate.count < BUFFER_SIZE) {
+#endif
                 zstate.buffer[zstate.count] = byte;
             }
             zstate.count++;
@@ -1102,7 +1081,7 @@ void zrx_byte(uint8_t byte)
                 case ZCRCE:
                     zstate.datalen = zstate.count - 1;
                     zstate.frametype = byte;
-#ifdef ZMODEM_O_BYTESIZE_CRC32
+#if defined(ZMODEM_O_BYTESIZE_CRC32) || defined(ZMODEM_O_BYTESIZE_CRC16)
                     keep_byte = 0;
 #endif
                     zmodem_enter_state((zstate.state ==
@@ -1111,7 +1090,7 @@ void zrx_byte(uint8_t byte)
                 case ZCRCG:
                     zstate.datalen = zstate.count - 1;
                     zstate.frametype = byte;
-#ifdef ZMODEM_O_BYTESIZE_CRC32
+#if defined(ZMODEM_O_BYTESIZE_CRC32) || defined(ZMODEM_O_BYTESIZE_CRC16)
                     keep_byte = 0;
 #endif
                     zmodem_enter_state((zstate.state ==
@@ -1120,7 +1099,7 @@ void zrx_byte(uint8_t byte)
                 case ZCRCQ:
                     zstate.datalen = zstate.count - 1;
                     zstate.frametype = byte;
-#ifdef ZMODEM_O_BYTESIZE_CRC32
+#if defined(ZMODEM_O_BYTESIZE_CRC32) || defined(ZMODEM_O_BYTESIZE_CRC16)
                     keep_byte = 0;
 #endif
                     zmodem_enter_state((zstate.state ==
@@ -1129,7 +1108,7 @@ void zrx_byte(uint8_t byte)
                 case ZCRCW:
                     zstate.datalen = zstate.count - 1;
                     zstate.frametype = byte;
-#ifdef ZMODEM_O_BYTESIZE_CRC32
+#if defined(ZMODEM_O_BYTESIZE_CRC32) || defined(ZMODEM_O_BYTESIZE_CRC16)
                     keep_byte = 0;
 #endif
                     zmodem_enter_state((zstate.state ==
@@ -1141,7 +1120,7 @@ void zrx_byte(uint8_t byte)
                     break;
                 }
             }
-#ifdef ZMODEM_O_BYTESIZE_CRC32
+#if defined(ZMODEM_O_BYTESIZE_CRC32) || defined(ZMODEM_O_BYTESIZE_CRC16)
             if (keep_byte) {
 #ifdef ZMODEM_O_BYTESIZE_WRITE
                 if (zstate.protostate == PROTOSTATE_RX_TRANSFER) {
@@ -1163,10 +1142,23 @@ void zrx_byte(uint8_t byte)
         case STATE_DATA_ZBIN_ZCRCW:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 2) {
-                uint16_t crc = crc16(zstate.buffer, zstate.datalen, 0);
-                crc = crc16(&zstate.frametype, 1, crc);
+#ifdef ZMODEM_O_BYTESIZE_CRC16
+                crc16bs_upd(zstate.frametype);
+                uint16_t crc = crc16bs_end();
+#else
+                zstate.buffer[zstate.datalen] = zstate.frametype;
+                uint16_t crc = crc16(zstate.buffer, zstate.datalen+1, 0);
+                //crc = crc16(&zstate.frametype, 1, crc);
+#endif
                 uint16_t rxcrc = zstate.crc[1] | (zstate.crc[0] << 8);
                 ZDEBUG("CRC is %x, received %x, len is %d\n", crc, rxcrc, zstate.datalen);
+#ifdef __MSP430__
+                if (crc == rxcrc) {
+                    sig1_on;
+                } else {
+                    sig0_on;
+                }
+#endif
                 zmodem_process_data(crc == rxcrc);
             }
             break;
@@ -1182,8 +1174,8 @@ void zrx_byte(uint8_t byte)
 #else
                 zstate.buffer[zstate.datalen] = zstate.frametype;
                 uint32_t crc = crc32(zstate.buffer, zstate.datalen+1, 0);
-#endif
                 //crc = crc32(&zstate.frametype, 1, crc);
+#endif
                 uint32_t rxcrc = (uint32_t) zstate.crc[0] | ((uint32_t) zstate.crc[1] << 8) | ((uint32_t) zstate.crc[2] << 16) | ((uint32_t) zstate.crc[3] << 24);
                 ZDEBUG("CRC is %x, received %x, len is %d\n", crc, rxcrc, zstate.datalen);
 #if 0

@@ -8,6 +8,9 @@
 // this might be dead slow on HOST mode, but for FRAM it's great
 #define ZMODEM_O_BYTESIZE_WRITE
 
+#define FILE_MAX_SZ 0x33FF0
+#define FILE_MIN_SZ 0x7f
+
 #define DEBUG
 
 #endif

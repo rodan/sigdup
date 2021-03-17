@@ -19,6 +19,7 @@ int fdout;
 #else
 #include "proj.h"
 #include "uart0.h"
+#include "uart3.h"
 #include "uart0_extras.h"
 #include "fram_glue.h"
 #include "helper.h"
@@ -194,8 +195,12 @@ uint32_t _atoi(char* str)
     uint8_t i;
     uint32_t ret = 0;
  
-    for (i = 0; str[i] != '\0'; ++i) {
-        ret = ret * 10 + str[i] - '0';
+    for (i = 0; (str[i] != '\0') && (str[i] != 0x20) && (i < 7); ++i) {
+		if ((str[i] > 0x29) && (str[i] < 0x40)) {
+        	ret = ret * 10 + str[i] - '0';
+		} else {
+			return ret;
+		}
     }
  
     return ret;
@@ -411,63 +416,27 @@ void zmodem_process_zfile_data(void)
 
     char *filenamep = (char *)zstate.buffer;
     int filenamelen = strlen(filenamep);
-    char *lengthp = filenamep + filenamelen + 1;
+    char *filesize = filenamep + filenamelen + 1;
 
     /* Check that we have at least one more null terminator */
     if (filenamelen + 1 >= zstate.datalen)
         return;
 
-    char *pch = strtok(lengthp, " ");
-
-    char *mdatep = NULL;
-    char *modep = NULL;
-    char *serialp = NULL;
-    char *rfilesp = NULL;
-    char *rdatap = NULL;
-
-    if (pch != NULL) {
-        /* lengthp */
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        mdatep = pch;
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        modep = pch;
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        serialp = pch;
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        rfilesp = pch;
-        pch = strtok(NULL, " ");
-    }
-
-    if (pch != NULL) {
-        rdatap = pch;
-        //pch = strtok(NULL, " ");
-    }
-
-    (void)mdatep;
-    (void)modep;
-    (void)serialp;
-    (void)rfilesp;
-
-    if (rdatap) {
-        zstate.total = zstate.transferred + _atoi(rdatap);
-    }
+    zstate.total = zstate.transferred + _atoi(filesize);
 
     /* Optional - send a ZRCRC to determine where to start from */
 
     ZDEBUG("Got filename: %s, sz %u\n", zstate.buffer, zstate.total);
     zstate.fileoffset = 0;
+
+    if ((zstate.total < FILE_MIN_SZ) || (zstate.total > FILE_MAX_SZ)) {
+        ZDEBUG("! skipping, wrong size \n");
+        uint8_t header[] = { 0, 0, 0, 0 };
+        /* ZSKIP or ZFERR? */
+        zmodem_send_hex_header(ZSKIP, header);
+        return;
+    }
+
     if (zmodem_open_file((char *)zstate.buffer)) {
         zmodem_enter_protostate(PROTOSTATE_RX_TRANSFER);
         zmodem_send_rpos();
