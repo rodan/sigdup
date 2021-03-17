@@ -19,6 +19,7 @@ make scan-build
   runs LLVM's static code analyzer
 
 
+this zmodem implementation has been tested and found to work well with lrzsz, zoc and teraterm.
 
 
 
