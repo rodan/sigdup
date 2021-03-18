@@ -10,6 +10,6 @@
 #define FILE_MAX_SZ 0x33FF0
 #define FILE_MIN_SZ 0x7f
 
-#define DEBUG
+//#define DEBUG
 
 #endif

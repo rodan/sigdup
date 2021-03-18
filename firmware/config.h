@@ -11,7 +11,7 @@
 #endif
 
 #define USE_UART0
-#define USE_UART3
+//#define USE_UART3
 
 //#define BAUD_9600
 //#define BAUD_19200
@@ -32,8 +32,8 @@
 #define UART3_TX_USES_IRQ
 #endif
 
-#define FILE_MAX_SZ 0x33FF0
 #define FILE_MIN_SZ 0x7f
+#define FILE_MAX_SZ 0x33FF0
 
 // hardware-based crc32 for 1024bytes takes 2.23ms @16MHz
 // software-based crc32 for the exact same data takes 14.89ms @16MHz
@@ -46,6 +46,8 @@
 
 // save transfered bytes one by one thus minimizing used RAM space
 #define ZMODEM_O_BYTESIZE_WRITE
+
+//#define ZMODEM_SEGMENTED_STREAMING
 
 // enable in order to have the following led setup:
 // led 2 - on during timer interrupt operation

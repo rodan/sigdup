@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS= -Wall -DHOST -ggdb
 LDFLAGS =
 
-.c.o: config.h
+.c.o:
 	$(CC) -c $(CFLAGS) $*.c
 
 $(PROG): tags $(OBJS) config.h
@@ -20,5 +20,5 @@ scan-build: clean
 cppcheck: clean
 	@cppcheck --force --enable=warning --enable=performance --enable=information --enable=missingInclude -I ./ ./
 
-clean :
+clean:
 	rm -f *.o $(PROG) tags

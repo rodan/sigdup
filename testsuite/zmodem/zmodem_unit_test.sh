@@ -2,7 +2,7 @@
 
 set -e
 
-TEST_ITER=1000
+TEST_ITER=1000000
 TESTFILE_DIR='/tmp/lrzsz/testfiles'
 RECV_DIR='/tmp/lrzsz/recv'
 RECV_LOG='/tmp/lrzsz/recv/log'
@@ -77,7 +77,8 @@ create_testfile()
         file_sz=$((file_sz + RANDOM))
     done
 
-    [ ${file_sz} == 0 ] && file_sz=1
+    (( file_sz <  128 )) && file_sz=300
+    (( file_sz > 212975 )) && file_sz=200322
 
     dd if=/dev/urandom of=${file} bs=${file_sz} count=1 status=none || {
     #dd if=/dev/zero of=${file} bs=${file_sz} count=1 status=none || {
@@ -104,7 +105,7 @@ test_transfer()
     base_name=`basename "${file}"`
 
     cd "${RECV_DIR}"
-    ${SZBIN} --quiet "${file}" < "${PIPE}" | ${RZBIN} > "${PIPE}"
+    ${SZBIN} --quiet "${file}" < "${PIPE}" | ${RZBIN} --quiet > "${PIPE}"
 
     cks_in=`sha256sum < "${file}"`
     cks_out=`sha256sum < "${RECV_DIR}/${base_name}"`
@@ -117,14 +118,14 @@ test_transfer()
     #echo ${cks_out} ok
 
     rm -f "${RECV_DIR}/${base_name}"
-    rm -f "${file}"
+    ${keep_file} || rm -f "${file}"
 
     return 0
 }
 
 test_existing()
 {
-
+    keep_file=true
     find "${TESTFILE_DIR}" -type f | while read file; do
         true
         test_transfer "${file}"
@@ -133,6 +134,7 @@ test_existing()
 
 test_new()
 {
+    keep_file=false
     for ((i=0;i<TEST_ITER;i++)); do
         file=`create_testfile`
         test_transfer "${file}"
