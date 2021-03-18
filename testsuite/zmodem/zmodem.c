@@ -45,40 +45,40 @@ char z_buf[CONV_BASE_10_BUF_SZ];
 #define ZRUB0 0x6c
 #define ZRUB1 0x6d
 
-#define	ZBIN    0x41
-#define	ZHEX    0x42
-#define	ZBIN32  0x43
-#define	ZBINR32 0x44
+#define ZBIN    0x41
+#define ZHEX    0x42
+#define ZBIN32  0x43
+#define ZBINR32 0x44
 
-#define	ZRQINIT     0x00
-#define	ZRINIT      0x01
-#define	ZSINIT      0x02
-#define	ZACK        0x03
-#define	ZFILE       0x04
-#define	ZSKIP       0x05
-#define	ZNAK        0x06
-#define	ZABORT      0x07
-#define	ZFIN        0x08
-#define	ZRPOS       0x09
-#define	ZDATA       0x0a
-#define	ZEOF        0x0b
-#define	ZFERR       0x0c
-#define	ZCRC        0x0d
-#define	ZCHALLENGE  0x0e
-#define	ZCOMPL      0x0f
-#define	ZCAN        0x10
-#define	ZFREECNT    0x11
-#define	ZCOMMAND    0x12
-#define	ZSTDERR     0x13
+#define ZRQINIT     0x00
+#define ZRINIT      0x01
+#define ZSINIT      0x02
+#define ZACK        0x03
+#define ZFILE       0x04
+#define ZSKIP       0x05
+#define ZNAK        0x06
+#define ZABORT      0x07
+#define ZFIN        0x08
+#define ZRPOS       0x09
+#define ZDATA       0x0a
+#define ZEOF        0x0b
+#define ZFERR       0x0c
+#define ZCRC        0x0d
+#define ZCHALLENGE  0x0e
+#define ZCOMPL      0x0f
+#define ZCAN        0x10
+#define ZFREECNT    0x11
+#define ZCOMMAND    0x12
+#define ZSTDERR     0x13
 
-#define	ZF0_CANFDX  0x01
-#define	ZF0_CANOVIO 0x02
-#define	ZF0_CANBRK  0x04
-#define	ZF0_CANCRY  0x08
-#define	ZF0_CANLZW  0x10
-#define	ZF0_CANFC32 0x20
-#define	ZF0_ESCCTL  0x40
-#define	ZF0_ESC8    0x80
+#define ZF0_CANFDX  0x01
+#define ZF0_CANOVIO 0x02
+#define ZF0_CANBRK  0x04
+#define ZF0_CANCRY  0x08
+#define ZF0_CANLZW  0x10
+#define ZF0_CANFC32 0x20
+#define ZF0_ESCCTL  0x40
+#define ZF0_ESC8    0x80
 
 #define ZF1_CANVHDR 0x01
 
@@ -194,13 +194,14 @@ uint32_t _atoi(char* str)
 {
     uint8_t i;
     uint32_t ret = 0;
- 
-    for (i = 0; (str[i] != '\0') && (str[i] != 0x20) && (i < 7); ++i) {
-		if ((str[i] > 0x29) && (str[i] < 0x40)) {
-        	ret = ret * 10 + str[i] - '0';
-		} else {
-			return ret;
-		}
+
+    // uint32_t's length is 10 digits max so don't parse past that
+    for (i = 0; (str[i] != '\0') && (str[i] != 0x20) && (i < 10); ++i) {
+        if ((str[i] > 0x29) && (str[i] < 0x40)) {
+            ret = ret * 10 + str[i] - '0';
+        } else {
+            return ret;
+        }
     }
  
     return ret;
@@ -294,13 +295,13 @@ void zmodem_send_zrinit(void)
         ZMODEM_FRAME_SIZE >> 8,
         0,
         ZF0_CANFC32
-	};
+    };
 #else
     uint8_t header[] = {
         0,
         0,
         0,
-        ZF0_CANFC32	| ZF0_CANOVIO
+        ZF0_CANFC32 | ZF0_CANOVIO
     };
 #endif
     zstate.active = true;
@@ -594,29 +595,29 @@ void zmodem_process_zdata_data(void)
         zstate.fileoffset += zstate.datalen;
         /* XXX we may need to revisit this if we ever support resuming */
         zstate.transferred += zstate.datalen;
-		ZDEBUG("zstate.state %d\r\nzstate.frametype %x\r\n", zstate.state, zstate.frametype);
-		// after a ZCRCQ/ZCRCW frame is received zstate.state gets reset to 0, so the 
-		// old switch() based on state never gets to send out the ZACK headers
-		switch (zstate.frametype) {
-		case ZCRCQ:
-		case ZCRCW:
-			if (zstate.fileoffset != zstate.total) {
-				uint8_t header[] = {
-					zstate.fileoffset & 0xff,
-					(zstate.fileoffset >> 8) & 0xff,
-					(zstate.fileoffset >> 16) & 0xff,
-					(zstate.fileoffset >> 24) & 0xff
-				}; 
-				zmodem_send_hex_header(ZACK, header);
-			}
-			break;
-		case ZCRCG:
-		case ZCRCE:
-			// no response is needed unless an error is detected
-			break;
-		default:
-			break;
-		}
+        ZDEBUG("zstate.state %d\r\nzstate.frametype %x\r\n", zstate.state, zstate.frametype);
+        // after a ZCRCQ/ZCRCW frame is received zstate.state gets reset to 0, so the 
+        // old switch() based on state never gets to send out the ZACK headers
+        switch (zstate.frametype) {
+        case ZCRCQ:
+        case ZCRCW:
+            if (zstate.fileoffset != zstate.total) {
+                uint8_t header[] = {
+                    zstate.fileoffset & 0xff,
+                    (zstate.fileoffset >> 8) & 0xff,
+                    (zstate.fileoffset >> 16) & 0xff,
+                    (zstate.fileoffset >> 24) & 0xff
+                }; 
+                zmodem_send_hex_header(ZACK, header);
+            }
+            break;
+        case ZCRCG:
+        case ZCRCE:
+            // no response is needed unless an error is detected
+            break;
+        default:
+            break;
+        }
     } else {
         zmodem_send_rpos();
         zmodem_enter_state(STATE_IDLE);
@@ -1147,10 +1148,10 @@ void zrx_byte(uint8_t byte)
                 }
 #endif
                 if (zstate.state == STATE_DATA_ZBIN32) {
-					crc32bs_upd(byte);
-				} else {
-					crc16bs_upd(byte);
-				}
+                    crc32bs_upd(byte);
+                } else {
+                    crc16bs_upd(byte);
+                }
             }
 #endif
             break;
@@ -1177,12 +1178,12 @@ void zrx_byte(uint8_t byte)
                 }
 #endif
 /*
-				uint16_t i;
-				ZDEBUG("checked the following:\r\n");
-				for (i=0;i<zstate.datalen+1;i++) {
-					ZDEBUG(" %02x", zstate.buffer[i]);
-				}
-				ZDEBUG("\r\n");
+                uint16_t i;
+                ZDEBUG("checked the following:\r\n");
+                for (i=0;i<zstate.datalen+1;i++) {
+                    ZDEBUG(" %02x", zstate.buffer[i]);
+                }
+                ZDEBUG("\r\n");
 */
                 zmodem_process_data(crc == rxcrc);
             }
