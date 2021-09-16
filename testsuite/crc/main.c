@@ -98,8 +98,8 @@ int main(void)
     initSwCrc32Table();
 
     // lib
-    lib_crc16_res = crc16(in1, sizeof(in1), 0);
-    lib_crc32_res = crc32(in1, sizeof(in1), 0);
+    lib_crc16_res = zcrc16(in1, sizeof(in1), 0);
+    lib_crc32_res = zcrc32(in1, sizeof(in1), 0);
 
 
     // msp430
@@ -144,11 +144,11 @@ int main(void)
     crc32_test0 = crc32_msp(in2_extra, sizeof(in2_extra), crc32_test0);
 
     // test1
-    crc32_test1 = crc32(in1, sizeof(in1), 0);
-    crc32_test1 = crc32(in2_extra, 1, crc32_test1);
+    crc32_test1 = zcrc32(in1, sizeof(in1), 0);
+    crc32_test1 = zcrc32(in2_extra, 1, crc32_test1);
 
     // test2
-    crc32_test2 = crc32(in1, sizeof(in1), 0);
+    crc32_test2 = zcrc32(in1, sizeof(in1), 0);
     crc32bs_start(crc32_test2);
     crc32bs_upd(in2_extra[0]);
     crc32_test2 = crc32bs_end();

@@ -25,7 +25,7 @@ $(EXOUTPUT): $(LOCAL_OBJECTS) $(EXOBJECT)
 	@$(CC) $(LDFLAGS) -lzip $(LOCAL_OBJECTS) $(TLPI_LIB) -o $@
 
 $(EXOBJECT): $(PROJ_SRC)
-	@$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+	@$(CC) $(INCLUDES) $(CFLAGS) -g -c $< -o $@
 
 allgen : ${GEN_EXE}
 
@@ -38,3 +38,11 @@ tags: $(SRCS)
 	@exuberant-ctags -R
 
 ${EXE} : ${TLPI_LIB}		# True as a rough approximation
+
+cppcheck: $(PROJ)
+	@cppcheck --quiet --force --enable=warning --enable=performance --enable=information --enable=performance --enable=portability -I ./ ./
+
+scan-build: clean
+	@scan-build make
+
+
