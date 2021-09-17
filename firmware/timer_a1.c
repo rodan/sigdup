@@ -14,6 +14,38 @@
 volatile uint8_t timer_a1_last_event;
 volatile uint16_t timer_a1_ovf;
 
+uint32_t stream_pos;   /// FRAM address for the next stream data pkt
+uint32_t stream_start; /// FRAM address where the stream starts
+uint32_t stream_end;   /// FRAM address where the stream ends
+
+uint8_t next_sig = 0;
+uint16_t next_ccr = 0;
+
+uint32_t timer_a1_get_stream_pos(const uint32_t address)
+{
+    return stream_pos;
+}
+
+void timer_a1_set_stream_pos(const uint32_t address)
+{
+    stream_pos = address;
+}
+
+uint32_t timer_a1_get_stream_end(const uint32_t address)
+{
+    return stream_end;
+}
+
+void timer_a1_set_stream_end(const uint32_t address)
+{
+    stream_end = address;
+}
+
+void timer_a1_set_stream_start(const uint32_t address)
+{
+    stream_start = address;
+}
+
 void timer_a1_init(void)
 {
 
@@ -27,6 +59,8 @@ void timer_a1_init(void)
 
     __disable_interrupt();
     timer_a1_ovf = 0;
+    stream_pos = 0;
+    stream_end = 0;
     TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide SMCLK by 8
 #if defined (SMCLK_FREQ_8M)
     TA1EX0 = TAIDEX_3; // further divide SMCLK by 4
@@ -46,72 +80,6 @@ void timer_a1_rst_event(void)
     timer_a1_last_event = TIMER_A1_EVENT_NONE;
 }
 
-void timer_a1_fake_ccr2_event(void)
-{
-    timer_a1_last_event = TIMER_A1_EVENT_CCR2;
-}
-
-void timer_a1_delay_noblk_ccr1(uint16_t ticks)
-{
-    TA1CCTL1 &= ~CCIE;
-    TA1CCTL1 = 0;
-    TA1CCR1 = TA1R + ticks;
-    TA1CCTL1 = CCIE;
-}
-
-void timer_a1_delay_noblk_ccr1_disable(void)
-{
-    TA1CCTL1 &= ~CCIE;
-    TA1CCTL1 = 0;   
-}
-
-void timer_a1_delay_ccr2(uint16_t ticks)
-{
-    TA1CCTL2 &= ~CCIE;
-    TA1CCTL2 = 0;
-    TA1CCR2 = TA1R + ticks;
-    TA1CCTL2 = CCIE;
-
-    timer_a1_last_event &= ~TIMER_A1_EVENT_CCR2;
-    while (1) {
-        //_BIS_SR(LPM3_bits + GIE);
-        //__no_operation();
-        if (timer_a1_last_event & TIMER_A1_EVENT_CCR2)
-            break;
-    }
-    TA1CCTL2 &= ~CCIE;
-    timer_a1_last_event &= ~TIMER_A1_EVENT_CCR2;
-}
-
-void timer_a1_sleep(const uint16_t ms)
-{
-    uint32_t ticks, d, r;
-    uint16_t i;
-
-    ticks = 250 * (uint32_t) ms;
-
-    if (ticks < 65000) {
-        timer_a1_delay_ccr2(ticks - TA1_SLEEP_MS_COMPENSATION);
-    } else {
-        d = ticks / 65000;
-        r = ticks % 65000;
-
-        for (i = d; i > 0; i--) {
-            timer_a1_delay_ccr2(65000 - TA1_SLEEP_TICKS_COMPENSATION);
-        }
-        if (r > TA1_SLEEP_TICKS_COMPENSATION) {
-            timer_a1_delay_ccr2(r - TA1_SLEEP_TICKS_COMPENSATION);
-        }
-    }
-}
-
-void timer_a1_sleep_ticks(const uint16_t ticks)
-{
-    timer_a1_delay_ccr2(ticks - TA1_SLEEP_TICKS_COMPENSATION);
-}
-
-
-
 __attribute__ ((interrupt(TIMER1_A1_VECTOR)))
 void timer1_A1_ISR(void)
 {
@@ -119,13 +87,26 @@ void timer1_A1_ISR(void)
     sig2_on;
 #endif
     uint16_t iv = TA1IV;
+
     if (iv == TAIV__TACCR1) {
-        // timer used by timer_a1_delay_noblk_ccr1()
-        // disable interrupt
-        TA1CCTL1 &= ~CCIE;
+        sig0_on;
+        P2OUT = next_sig;
         TA1CCTL1 = 0;
-        timer_a1_last_event |= TIMER_A1_EVENT_CCR1;
-        _BIC_SR_IRQ(LPM3_bits);
+        TA1CCR1 = next_ccr;
+        TA1CCTL1 = CCIE;
+        sig0_off;
+
+        stream_pos += 3;
+        if (stream_pos < stream_end) {
+            next_sig = *((uint8_t *) stream_pos);
+            next_ccr = *((uint16_t *) (stream_pos + 1));
+        } else {
+            TA1CCTL1 = 0;
+            stream_pos = stream_start;
+        }
+
+        //timer_a1_last_event |= TIMER_A1_EVENT_CCR1;
+        //_BIC_SR_IRQ(LPM3_bits);
     } else if (iv == TAIV__TACCR2) {
         // timer used by timer_a1_delay_noblk_ccr2()
         // disable interrupt

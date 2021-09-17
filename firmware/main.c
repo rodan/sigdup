@@ -4,6 +4,7 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "pg.h"
 #include "proj.h"
 #include "driverlib.h"
 #include "glue.h"
@@ -21,6 +22,9 @@
 volatile uint8_t port5_last_event;
 
 uint8_t tcounter = 0;
+
+//uint32_t mstream_pos = 260;   /// FRAM address for the next stream data pkt
+//uint32_t mstream_end = 300;            /// FRAM address where the stream ends
 
 void main_init(void)
 {
@@ -57,10 +61,14 @@ void main_init(void)
     PJOUT = 0;
     PJDIR = 0xffff;
 
+    // output SMCLK on P3.4
+    P3OUT &= ~BIT4;
+    P3DIR |= BIT4;
+    P3SEL1 |= BIT4;
+
     sig0_on;
 }
 
-/*
 static void button_55_irq(uint32_t msg)
 {
     if (P5IN & BIT5) {
@@ -75,7 +83,37 @@ static void button_55_irq(uint32_t msg)
 
 static void button_55_long_press_irq(uint32_t msg)
 {
-    uart0_print("PB55 long\r\n");
+    fram_header *hdr;
+    replay_header_t *replay_hdr;
+
+    hdr = (fram_header *)(uintptr_t) HIGH_FRAM_ADDR;
+    replay_hdr = (replay_header_t *) hdr->file_start;
+
+    // perform checks on FRAM data
+    if (replay_hdr->version != 1) {
+        uart0_print("wrong version\r\n");
+        return;
+    }
+
+    if (replay_hdr->header_size + (replay_hdr->packet_count * replay_hdr->bytes_per_packet) != hdr->file_sz) {
+        uart0_print("stream length error\r\n");
+        return;
+    }
+
+    // start sending stream
+    uart0_print("go\r\n");
+
+    //stream_pos = hdr->file_start + replay_hdr->header_size;
+    //stream_end = hdr->file_start + hdr->file_sz;
+    timer_a1_set_stream_pos(hdr->file_start + replay_hdr->header_size);
+    timer_a1_set_stream_start(hdr->file_start + replay_hdr->header_size);
+    timer_a1_set_stream_end(hdr->file_start + hdr->file_sz);
+
+    TA1CCTL1 &= ~CCIE;
+    TA1CCTL1 = 0;
+    TA1CCR1 = 10;
+    TA1CCTL1 = CCIE;
+
 }
 
 static void button_56_irq(uint32_t msg)
@@ -92,7 +130,7 @@ static void button_56_long_press_irq(uint32_t msg)
 {
     uart0_print("PB56 long\r\n");
 }
-*/
+
 
 static void scheduler_irq(uint32_t msg)
 {
@@ -118,6 +156,24 @@ void check_events(void)
 {
     uint32_t msg = SYS_MSG_NULL;
     uint16_t ev;
+
+    //uint16_t lstream_pos = 260;
+    //uint16_t lstream_end = 300;
+
+#if 0
+    if (timer_a1_get_event()) {
+        //send_8ch();
+        TA1CCR1 = 10000;
+        lstream_pos += 3;
+
+        if (lstream_pos < lstream_end) {
+            TA1CCTL1 = CCIE;
+        }
+        //__nop();
+        sig0_off;
+        timer_a1_rst_event();
+    }
+#endif
 
     // uart RX
     if (uart0_get_event() & UART0_EV_RX) {
@@ -190,7 +246,7 @@ int main(void)
     fram_init();
 
     timer_a0_init();            // uart timeout
-//    timer_a1_init();            // interface - ccr1 - meas interval, ccr2 - blocking delay
+    timer_a1_init();            // interface - ccr1 - meas interval, ccr2 - blocking delay
     timer_a2_init();            // scheduler, systime()
 
     uart0_port_init();
@@ -212,11 +268,11 @@ int main(void)
 
     eh_register(&uart0_rx_irq, SYS_MSG_UART0_RX);
     //eh_register(&uart0_rx_irq, SYS_MSG_TIMERA0_CCR1);
-    //eh_register(&button_55_irq, SYS_MSG_P55_INT);
-    //eh_register(&button_56_irq, SYS_MSG_P56_INT);
+    eh_register(&button_55_irq, SYS_MSG_P55_INT);
+    eh_register(&button_56_irq, SYS_MSG_P56_INT);
 
-    //eh_register(&button_55_long_press_irq, SYS_MSG_P55_TMOUT_INT);
-    //eh_register(&button_56_long_press_irq, SYS_MSG_P56_TMOUT_INT);
+    eh_register(&button_55_long_press_irq, SYS_MSG_P55_TMOUT_INT);
+    eh_register(&button_56_long_press_irq, SYS_MSG_P56_TMOUT_INT);
 
     eh_register(&scheduler_irq, SYS_MSG_TIMERA2_CCR1);
 
@@ -225,9 +281,6 @@ int main(void)
     // Enable button interrupt
     P5IE |= BIT5 | BIT6;
 
-    // fake button interrupt so we read the battery voltage
-    //button_31_irq(0);
-
     display_menu();
 
     while (1) {
@@ -235,7 +288,7 @@ int main(void)
 #ifdef LED_SYSTEM_STATES
         sig4_off;
 #endif
-        _BIS_SR(LPM3_bits + GIE);
+        _BIS_SR(LPM0_bits + GIE);
 #ifdef LED_SYSTEM_STATES
         sig4_on;
 #endif

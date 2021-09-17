@@ -21,16 +21,12 @@
 
 
 void timer_a1_init(void);
-void timer_a1_halt(void);
-void timer_a1_delay_noblk_ccr1(uint16_t ticks);
-void timer_a1_delay_ccr2(uint16_t ticks);
 
-void timer_a1_delay_noblk_ccr1_disable(void);
 uint8_t timer_a1_get_event(void);
 void timer_a1_rst_event(void);
-void timer_a1_fake_ccr2_event(void);
 
-void timer_a1_sleep(const uint16_t ms);
-void timer_a1_sleep_ticks(const uint16_t ticks);
+void timer_a1_set_stream_pos(const uint32_t address);
+void timer_a1_set_stream_start(const uint32_t address);
+void timer_a1_set_stream_end(const uint32_t address);
 
 #endif

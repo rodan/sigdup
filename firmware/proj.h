@@ -73,5 +73,6 @@
 #define              HIGH_FRAM_SIZE  0x33F00
 
 void check_events(void);
+void send_8ch(void);
 
 #endif

@@ -32,7 +32,7 @@
 #define UART3_TX_USES_IRQ
 #endif
 
-#define FILE_MIN_SZ 0x7f
+#define FILE_MIN_SZ 0x3f
 #define FILE_MAX_SZ 0x33FF0
 
 // hardware-based crc32 for 1024bytes takes 2.23ms @16MHz
