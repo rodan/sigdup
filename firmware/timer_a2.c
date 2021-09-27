@@ -5,7 +5,7 @@
 //   available from:  https://github.com/rodan/
 //   license:         BSD
 
-#include "config.h"
+//#include "config.h"
 #include "timer_a2.h"
 
 volatile uint16_t timer_a2_last_event;        // bitwise flag of current timer_a2 interrupt events

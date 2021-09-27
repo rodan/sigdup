@@ -7,7 +7,7 @@
 //   available from:  https://github.com/rodan/
 //   license:         BSD
 
-#include "config.h"
+//#include "config.h"
 #include "timer_a1.h"
 //#include "uart3.h"
 

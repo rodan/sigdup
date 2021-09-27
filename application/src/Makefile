@@ -22,7 +22,7 @@ all : ${EXOUTPUT} tags
 
 $(EXOUTPUT): $(LOCAL_OBJECTS) $(EXOBJECT)
 	@echo -e "\n>> Building $@ as target $(TARGET)"
-	@$(CC) $(LDFLAGS) -lzip $(LOCAL_OBJECTS) $(TLPI_LIB) -o $@
+	@$(CC) $(LDFLAGS) -lzip $(LOCAL_OBJECTS) $(TLPI_LIB) -o $@ && size $@
 
 $(EXOBJECT): $(PROJ_SRC)
 	@$(CC) $(INCLUDES) $(CFLAGS) -g -c $< -o $@

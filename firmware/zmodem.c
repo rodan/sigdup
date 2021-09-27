@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include "config.h"
 
-int fdout;
+static int fdout;
 
 #else
 #include "proj.h"
@@ -22,9 +22,9 @@ int fdout;
 #include "uart3.h"
 #include "uart0_extras.h"
 #include "fram_glue.h"
-#include "helper.h"
+#include "lib_convert.h"
 
-char z_buf[CONV_BASE_10_BUF_SZ];
+//char z_buf[CONV_BASE_10_BUF_SZ];
 
 #endif
 

@@ -8,7 +8,7 @@
 #include "uart0_extras.h"
 #include "timer_a0.h"
 
-#include "config.h"
+//#include "config.h"
 #include "zmodem.h"
 
 volatile uint8_t uart0_input_type;      // type of input - either user generated or zmodem
