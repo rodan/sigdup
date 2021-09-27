@@ -37,7 +37,7 @@ CFLAGS_REL	 += -Os -fdata-sections -ffunction-sections -fomit-frame-pointer
 LDFLAGS_REL	 += -Wl,-s
 CFLAGS_DBG	 += -O1 -ggdb
 LDFLAGS_DBG	 += 
-INCLUDES         := -I $(GCC_EXTRA_INC_DIR) -I $(GCC_INC_DIR) -I $(DRIVERLIB) -I $(GLUELIB) -I $(GLUELIB_HAL) -I $(GCC_CSS_INC_GCC_DIR) -I ./ -I .
+INCLUDES         := -I $(GCC_EXTRA_INC_DIR) -I $(GCC_INC_DIR) -I $(DRIVERLIB) -I $(GLUELIB) -I $(GLUELIB_HAL) -I $(GCC_CCS_INC_GCC_DIR) -I ./ -I .
 ######################################
 DRIVERLIB_SRC    := $(wildcard $(DRIVERLIB)/*.c)
 GLUELIB_SRC      := $(wildcard $(GLUELIB)/*.c)
@@ -60,7 +60,7 @@ EXOUTPUT         := $(OBJ_DIR)/$(PROJ).elf
 .PHONY: config
 .PHONY: config_macros
 .PHONY: mkdir_od
-#.PHONY: new_timestamps
+.PHONY: new_timestamps
 .PHONY: depend
 .PHONY: driverlib
 .PHONY: doc
@@ -85,7 +85,7 @@ TARGET	:= DEBUG
 CFLAGS	+= $(CFLAGS_DBG)
 LDFLAGS	+= $(LDFLAGS_DBG)
 endif
-all: new_timestamps depend version.h config.h config_macros tags driverlib $(EXOUTPUT) size
+all: depend version.h config.h config_macros tags driverlib $(EXOUTPUT) size
 endif
 
 ifeq ($(MEMORY_MODEL),LARGE)

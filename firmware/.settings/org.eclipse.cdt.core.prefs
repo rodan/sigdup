@@ -1,0 +1,16 @@
+eclipse.preferences.version=1
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Debug.1247910653/REFLIB_DIR/delimiter=\:
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Debug.1247910653/REFLIB_DIR/operation=append
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Debug.1247910653/REFLIB_DIR/value=/opt/reference_libs_msp430
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Debug.1247910653/append=true
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Debug.1247910653/appendContributed=true
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.1030255168/REFLIB_DIR/delimiter=\:
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.1030255168/REFLIB_DIR/operation=append
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.1030255168/REFLIB_DIR/value=/opt/reference_libs_msp430
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.1030255168/append=true
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.1030255168/appendContributed=true
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.869751606/REFLIB_DIR/delimiter=\:
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.869751606/REFLIB_DIR/operation=append
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.869751606/REFLIB_DIR/value=/opt/reference_libs_msp430
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.869751606/append=true
+environment/project/com.ti.ccstudio.buildDefinitions.MSP430.Release.869751606/appendContributed=true

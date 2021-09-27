@@ -24,4 +24,11 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>reference_libs_msp430</name>
+			<type>2</type>
+			<location>/opt/reference_libs_msp430</location>
+		</link>
+	</linkedResources>
 </projectDescription>
