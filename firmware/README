@@ -1,0 +1,65 @@
+
+ source:       https://github.com/rodan/sigdup 
+ author:       Petre Rodan <2b4eda@subdimension.ro>
+ license:      GNU GPLv3
+ toolchain used: msp430-elf-gcc (Mitto Systems Limited - msp430-gcc 9.3.1.11) 9.3.1 linux
+
+* How does this project work?
+
+a UI is provided over the UCA0 uart (aka 'MSP430 Application UART' on the EXP430FR5994 board). connection parameters are 57600 8n1.
+
+---------------------------
+sigdup build 542
+
+generic commands:
+
+ ?    - show help
+ sch  - show schedule
+ read - read HIFRAM
+ peek - peek HIFRAM
+---------------------------
+
+?       - displays this menu with all the supported commands
+sch     - shows a 3 column table with schaduling timings - column 1 is the slot, column 2 is the trigger moment, column 3 is a bitflag (1 - set to trigger, 0 - action already triggered)
+peek    - outputs (in xxd format) the first 256 bytes starting from HIGH_FRAM_ADDR
+read    - outputs (in xxd format) the file that was received via zmodem
+
+one can initiate a zmodem upload to the microcontroller at any time. the file will be saved into high FRAM.
+pressing the P5.5 button initiates parsing the uploaded file in order to replay the contained signal on PORT1 and optionally PORT2.
+
+the files that are expected are based on pulseview captures that have been converted via the ../application contained in this project.
+
+
+* Compiling the project
+
+option 1:
+the toolchain used for this project is provided by TI [1]. the rest of the tools needed by the Makefile in order to compile the project are readily available in most Linux distributions.
+make sure to 'git clone' the msp430 reference libraries [2] (or provide a symlink to them) to /opt/reference_libs_msp430
+
+use the following commands:
+
+ ln -s "/FIXTHIS/reference_libs_msp430" /opt/reference_libs_msp430
+
+ make
+    builds the entire project with the MSP430FR5994 target. all the resulting objects and the elf binary will be inside the './build/MSP430FR5994' subdirectory
+
+ make install
+    takes ./build/MSP430F5510/main.elf and tries to flash it. this needs the mspdebug application, an ezfet-1.2 or msp-fet programmer connected to the target board.
+
+ make scan-build
+    optional static scan provided by Clang (if installed)
+
+ make cppcheck
+    optional static scan provided by Cppcheck (if installed)
+
+
+option 2:
+install Code Composer Studio under Linux and Import the project found in this directory.
+compilation and debug happens as with any other CCS project, but be adivsed that only the gcc compiler is currently supported.
+
+no support for windows-based conpilation is provided.
+
+[1] https://www.ti.com/tool/MSP430-GCC-OPENSOURCE
+[2] https://github.com/rodan/reference_libs_msp430
+
+

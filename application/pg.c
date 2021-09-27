@@ -7,6 +7,7 @@
 #include <fts.h>
 #include <zip.h>
 
+#include "version.h"
 #include "lib_convert.h"
 #include "tlpi_hdr.h"
 #include "ini.h"
@@ -26,6 +27,9 @@ static int recursive_unlink(const char *dir);
 
 char *device;                   /// device name as used in the metadata file
 
+static uint8_t block_size = BLOCK_SIZE_1BYTE;   /// block size (in bytes) of the input capture
+static uint16_t mask = 0xffff;     /// mask to be applied to the captured signal - set bitmask 1 to channels that are of interest. default 0xffff
+static uint8_t shift = 0;          /// left shift input signal by these many bits, so that a channel of interest lands on a particular pin on ports P1/P2
 
 #define  POLYNOMIAL_32    0xEDB88320
 
@@ -34,6 +38,31 @@ uint32_t crc32Table[256];
 uint8_t crc32TableInit = 0;
 // crc32 used in the zcrc library
 void initSwCrc32Table(void);
+void show_usage(void);
+void show_version(void);
+
+
+void show_usage(void)
+{
+    printf("Usage: pg [OPTION]...\n");
+    printf("Convert PulseView capture into a highly-compressed file used to replay the signals\n\n");
+    printf("mandatory options:\n");
+    printf(" -i [FILE]   input PulseView '.sr' file\n");
+    printf(" -o [FILE]   output converted file\n");
+    printf("\n");
+    printf("non-mandatory options:\n");
+    printf(" -b [NUM]    block size (in bytes) of the input capture, default %d byte(s)\n", block_size);
+    printf(" -m [NUM]    mask (in hex) to be applied to the input port, default 0x%x\n", mask);
+    printf(" -s [NUM]    number of bits the output signal is shifted to the left, default %d\n", shift);
+    printf("  --help    display this help and exit\n");
+    printf("  --version output version information and exit\n");
+
+}
+
+void show_version(void)
+{
+    printf("pg %d.%d\nbuild %d commit %d\n", VER_MAJOR, VER_MINOR, BUILD, COMMIT);
+}
 
 int main(int argc, char *argv[])
 {
@@ -46,7 +75,6 @@ int main(int argc, char *argv[])
     ssize_t ucnt, ucnt_stop;    /// how many clocks the signal remains unchanged
     ssize_t pcnt = 0;           /// replay data packet count
     uint64_t i;
-    uint8_t block_size = BLOCK_SIZE_2BYTES;
     uint32_t period_cnt = 0;
 
     // zip related
@@ -61,8 +89,6 @@ int main(int argc, char *argv[])
     uint32_t freq_multiplier = 0;
     uint32_t freq = 0;
     double sampling_interval = 0;
-    uint16_t mask = 0xffff;     /// mask to be applied to the captured signal - set bitmask 1 to channels that are of interest. default 0xffff
-    uint8_t shift = 0;          /// left shift input signal by these many bits, so that a channel of interest lands on a particular pin on ports P1/P2
 
     uint8_t *sig_8ch;
     uint8_t last_8ch;
@@ -76,7 +102,7 @@ int main(int argc, char *argv[])
 
     device = DEF_DEVICE;
 
-    while ((opt = getopt(argc, argv, "b:i:o:d:m:s:")) != -1) {
+    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:s:")) != -1) {
         switch (opt) {
         case 'b':
             hstr_to_uint8(optarg, &block_size, 0, strlen(optarg) - 1, 1, 2);
@@ -93,6 +119,14 @@ int main(int argc, char *argv[])
         case 'd':
             device = optarg;
             break;
+        case 'h':
+            show_usage();
+            exit(0);
+            break;
+        case 'v':
+            show_version();
+            exit(0);
+            break;
         case 'o':
             outfile = optarg;
             break;
@@ -102,7 +136,8 @@ int main(int argc, char *argv[])
     }
 
     if ((infile == NULL) || (outfile == NULL)) {
-        printf("provide input and output files");
+        printf("Error: provide input and output files\n");
+        show_usage();
         exit(1);
     }
 

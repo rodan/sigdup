@@ -1,7 +1,6 @@
-include ../Makefile.inc
 
 PROJ = pg
-INCLUDES  := -I ./ -I ../tlpi-lib/
+INCLUDES  := -I ./ -I tlpi-lib/
 LOCAL_SRC := $(wildcard *.c)
 PROJ_SRC   = $(PROJ).c
 SRC        = $(PROJ_SRC) $(LOCAL_SRC)
@@ -10,11 +9,25 @@ EXOUTPUT   = $(PROJ)
 
 LOCAL_OBJECTS     = $(LOCAL_SRC:%.c=%.o)
 
+include Makefile.inc
+
 .PHONY: all
 .PHONY: clean
 .PHONY: tags
+.PHONY: lib
 
-all : ${EXOUTPUT} tags
+
+all : lib version.h $(EXOUTPUT) tags
+
+lib : $(TLPI_LIB)
+
+version.h: $(SRC)
+	@./tools/setver.sh
+
+$(TLPI_LIB): force_look
+	echo "looking into subdir $(TLPI_DIR)"
+	cd $(TLPI_DIR); $(MAKE) $(MFLAGS)
+	cd -
 
 %.o: %.c
 	@echo -e " * $(@F)"
@@ -29,9 +42,8 @@ $(EXOBJECT): $(PROJ_SRC)
 
 allgen : ${GEN_EXE}
 
-
 clean : 
-	${RM} ${EXE} *.o ${PROJ} tags
+	${RM} ${EXE} *.o ${PROJ} tags ${TLPI_LIB}
 
 tags: $(SRCS)
 	@echo "Generating tags .."
@@ -45,4 +57,5 @@ cppcheck: $(PROJ)
 scan-build: clean
 	@scan-build make
 
-
+force_look :
+	true

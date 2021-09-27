@@ -1,6 +1,6 @@
 # Makefile.inc - common definitions used by all makefiles
 
-TLPI_DIR = ../tlpi-lib
+TLPI_DIR = tlpi-lib
 TLPI_LIB = ${TLPI_DIR}/libtlpi.a
 TLPI_INCL_DIR = ${TLPI_DIR}
 

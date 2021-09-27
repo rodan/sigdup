@@ -16,7 +16,7 @@ allgen : ${TLPI_LIB}
 ${TLPI_LIB} : *.c ename.c.inc
 	${CC} -c -g ${CFLAGS} *.c
 	${RM} ${TLPI_LIB}
-	${AR} rs ${TLPI_LIB} *.o
+	${AR} rs libtlpi.a *.o
 
 ename.c.inc :
 	sh Build_ename.sh > ename.c.inc
