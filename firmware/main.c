@@ -329,3 +329,9 @@ void __attribute__((interrupt(PORT5_VECTOR))) port5_isr_handler(void)
     }
     P5IFG = 0;
 }
+
+#ifdef UNSUPPORTED_COMPILER
+    #error "This TI compiler is not supported since I cannot find a way to force it to use a large memory model while also push both data and code to lower memory"
+#endif
+
+

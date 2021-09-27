@@ -9,7 +9,7 @@
 
 #if defined (__TI_COMPILER_VERSION__)
 #pragma PERSISTENT(HIGH_FRAM_START)
-uint32_t HIGH_FRAM_START =
+const uint32_t HIGH_FRAM_START =
 #elif defined (__IAR_SYSTEMS_ICC__)
 __persistent uint32_t HIGH_FRAM_START =
 #elif defined (__GNUC__)
@@ -64,7 +64,7 @@ void fram_write_byte(uint8_t byte)
 
 int8_t fram_write_header(const fram_header *hdr)
 {
-    uint16_t len = sizeof(fram_hdr);
+    const uint16_t len = sizeof(fram_hdr);
     fram_hdr.file_start = HIGH_FRAM_START + len;
     fram_hdr.file_sz = hdr->file_sz;
 
