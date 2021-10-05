@@ -8,4 +8,6 @@ resources.c
 *~
 *.patch
 *.lck
+application/tlpi-lib/ename.c.inc
+application/tlpi-lib/libtlpi.a
 external/*

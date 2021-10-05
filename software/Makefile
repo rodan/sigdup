@@ -2,7 +2,7 @@
 PROJ = pg
 INCLUDES  := -I ./ -I tlpi-lib/
 LOCAL_SRC := $(wildcard *.c)
-PROJ_SRC   = $(PROJ).c
+PROJ_SRC   = main.c
 SRC        = $(PROJ_SRC) $(LOCAL_SRC)
 EXOBJECT   = $(PROJ).o
 EXOUTPUT   = $(PROJ)
