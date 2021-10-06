@@ -25,6 +25,9 @@ void timer_a1_init(void);
 uint8_t timer_a1_get_event(void);
 void timer_a1_rst_event(void);
 
+uint32_t timer_a1_get_stream_pos(void);
+uint32_t timer_a1_get_stream_start(void);
+uint32_t timer_a1_get_stream_end(void);
 void timer_a1_set_stream_pos(const uint32_t address);
 void timer_a1_set_stream_start(const uint32_t address);
 void timer_a1_set_stream_end(const uint32_t address);

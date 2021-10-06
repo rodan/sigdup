@@ -12,6 +12,8 @@
 #include "version.h"
 #include "zmodem.h"
 #include "fram_glue.h"
+#include "timer_a1.h"
+#include "pg.h"
 
 void display_menu(void)
 {
@@ -23,6 +25,7 @@ void display_menu(void)
     uart0_print(" \e[33;1msch\e[0m  - show schedule\r\n");
     uart0_print(" \e[33;1mread\e[0m - read HIFRAM\r\n");
     uart0_print(" \e[33;1mpeek\e[0m - peek HIFRAM\r\n");
+    uart0_print(" \e[33;1mpa\e[0m   - parse HIFRAM\r\n");
 }
 
 void display_DONE(void)
@@ -61,11 +64,46 @@ void display_schedule(void)
         uart0_print(_utoa(itoa_buf, flag));
         uart0_print("\r\n");
     }
-        trigger = timer_a2_get_trigger_next();
-        uart0_print("sch next ");
-        uart0_print(_utoa(itoa_buf, trigger));
+    trigger = timer_a2_get_trigger_next();
+    uart0_print("sch next ");
+    uart0_print(_utoa(itoa_buf, trigger));
+    uart0_print("\r\n");
+
+}
+
+void parse_fram(void)
+{
+    char itoa_buf[CONV_BASE_10_BUF_SZ];
+
+    volatile uint32_t stream_pos;   /// FRAM address for the next stream data pkt
+    volatile uint32_t stream_start; /// FRAM address where the stream starts
+    volatile uint32_t stream_end;   /// FRAM address where the stream ends
+
+    volatile uint8_t next_sig = 0;
+    volatile uint16_t next_ccr = 0;
+
+    replay_packet_8ch_t *pkt_8ch;
+
+    stream_start = timer_a1_get_stream_start();
+    stream_end = timer_a1_get_stream_end();
+    stream_pos = stream_start;
+
+    while (stream_pos < stream_end) {
+        pkt_8ch = (replay_packet_8ch_t *) stream_pos;
+        next_sig = pkt_8ch->sig;
+        next_ccr = pkt_8ch->ccr;
+
+        //next_sig = *((uint8_t *) stream_pos);
+        //next_ccr = *((uint16_t *) (stream_pos + 1));
+
+        uart0_print(" sig ");
+        uart0_print(_utoh(itoa_buf, next_sig));
+        uart0_print(" ccr ");
+        uart0_print(_utoa(itoa_buf, next_ccr));
         uart0_print("\r\n");
 
+        stream_pos += 3;
+    }
 }
 
 void print_buf(uint8_t * data, const uint16_t size)
@@ -136,7 +174,7 @@ void print_buf_ascii2mem(uint8_t * data, const uint16_t size)
     uint8_t byte;
     uint8_t nib;
     uint8_t data_out;
-    uint16_t len = size/2;
+    uint16_t len = size / 2;
 
     while (len) {
         byte = *(data++);
@@ -145,8 +183,8 @@ void print_buf_ascii2mem(uint8_t * data, const uint16_t size)
         } else {
             byte -= 55;
         }
-        nib = byte << 4; 
-       
+        nib = byte << 4;
+
         byte = *(data++);
         if (byte < 0x40) {
             byte -= 48;
@@ -211,7 +249,7 @@ void parse_user_input(void)
 
     // read the entire ringbuffer
     while (ringbuf_get(&uart0_rbrx, &rx)) {
-        if (c < PARSER_CNT-1) {
+        if (c < PARSER_CNT - 1) {
             input[c] = rx;
         }
         c++;
@@ -232,10 +270,11 @@ void parse_user_input(void)
         display_schedule();
     } else if (strstr(input, "peek")) {
         print_buf_fram(HIGH_FRAM_ADDR, 256);
+    } else if (strstr(input, "pa")) {
+        parse_fram();
     } else if (strstr(input, "read")) {
-        hdr = (fram_header *)(uintptr_t) HIGH_FRAM_ADDR;
+        hdr = (fram_header *) (uintptr_t) HIGH_FRAM_ADDR;
         print_buf_fram(hdr->file_start, hdr->file_sz);
         //print_buf_fram(HIGH_FRAM_ADDR + 8, hdr->file_size);
     }
 }
-

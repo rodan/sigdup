@@ -9,7 +9,7 @@
 
 //#include "config.h"
 #include "timer_a1.h"
-//#include "uart3.h"
+#include "pg.h"
 
 volatile uint8_t timer_a1_last_event;
 volatile uint16_t timer_a1_ovf;
@@ -21,7 +21,7 @@ volatile uint32_t stream_end;   /// FRAM address where the stream ends
 volatile uint8_t next_sig = 0;
 volatile uint16_t next_ccr = 0;
 
-uint32_t timer_a1_get_stream_pos(const uint32_t address)
+uint32_t timer_a1_get_stream_pos(void)
 {
     return stream_pos;
 }
@@ -31,7 +31,17 @@ void timer_a1_set_stream_pos(const uint32_t address)
     stream_pos = address;
 }
 
-uint32_t timer_a1_get_stream_end(const uint32_t address)
+uint32_t timer_a1_get_stream_start(void)
+{
+    return stream_start;
+}
+
+void timer_a1_set_stream_start(const uint32_t address)
+{
+    stream_start = address;
+}
+
+uint32_t timer_a1_get_stream_end(void)
 {
     return stream_end;
 }
@@ -39,11 +49,6 @@ uint32_t timer_a1_get_stream_end(const uint32_t address)
 void timer_a1_set_stream_end(const uint32_t address)
 {
     stream_end = address;
-}
-
-void timer_a1_set_stream_start(const uint32_t address)
-{
-    stream_start = address;
 }
 
 void timer_a1_init(void)
@@ -78,6 +83,7 @@ void timer1_A1_ISR(void)
 #ifdef LED_SYSTEM_STATES
     sig2_on;
 #endif
+    replay_packet_8ch_t *pkt_8ch;
     uint16_t iv = TA1IV;
 
     if (iv == TAIV__TACCR1) {
@@ -91,8 +97,11 @@ void timer1_A1_ISR(void)
 
         stream_pos += 3;
         if (stream_pos < stream_end) {
-            next_sig = *((uint8_t *) stream_pos);
-            next_ccr = *((uint16_t *) (stream_pos + 1));
+            //next_sig = *((uint8_t *) stream_pos);
+            //next_ccr = *((uint16_t *) (stream_pos + 1));
+            pkt_8ch = (replay_packet_8ch_t *) stream_pos;
+            next_sig = pkt_8ch->sig;
+            next_ccr = pkt_8ch->ccr;
         } else {
             TA1CCTL1 = 0;
             stream_pos = stream_start;
