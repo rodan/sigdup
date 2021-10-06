@@ -14,12 +14,12 @@
 volatile uint8_t timer_a1_last_event;
 volatile uint16_t timer_a1_ovf;
 
-uint32_t stream_pos;   /// FRAM address for the next stream data pkt
-uint32_t stream_start; /// FRAM address where the stream starts
-uint32_t stream_end;   /// FRAM address where the stream ends
+volatile uint32_t stream_pos;   /// FRAM address for the next stream data pkt
+volatile uint32_t stream_start; /// FRAM address where the stream starts
+volatile uint32_t stream_end;   /// FRAM address where the stream ends
 
-uint8_t next_sig = 0;
-uint16_t next_ccr = 0;
+volatile uint8_t next_sig = 0;
+volatile uint16_t next_ccr = 0;
 
 uint32_t timer_a1_get_stream_pos(const uint32_t address)
 {
@@ -49,23 +49,15 @@ void timer_a1_set_stream_start(const uint32_t address)
 void timer_a1_init(void)
 {
 
-    // ID__4 & TAIDEX_2
-    // 1 tick is TA1_DIVIDER / MCLK == 12/8000000 = 1.5 us
-    // overflow happens after .0015*65535 = 98.30 ms
-
-    // ID__8 & TAIDEX_3
-    // 1 tick is TA1_DIVIDER / MCLK == 32/8000000 = 4 us
-    // overflow happens after .004*65535 = 262.14 ms
-
     __disable_interrupt();
     timer_a1_ovf = 0;
     stream_pos = 0;
     stream_end = 0;
     TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide SMCLK by 8
 #if defined (SMCLK_FREQ_8M)
-    TA1EX0 = TAIDEX_3; // further divide SMCLK by 4
+    TA1EX0 = TAIDEX_0; // further divide SMCLK by 1
 #elif defined (SMCLK_FREQ_16M)
-    TA0EX0 = TAIDEX_7; // further divide SMCLK by 8
+    TA1EX0 = TAIDEX_1; // further divide SMCLK by 2
 #endif
     __enable_interrupt();
 }
@@ -90,11 +82,12 @@ void timer1_A1_ISR(void)
 
     if (iv == TAIV__TACCR1) {
         sig0_on;
-        P2OUT = next_sig;
+        P3OUT = next_sig;
         TA1CCTL1 = 0;
+        //next_ccr += 10000;
         TA1CCR1 = next_ccr;
+        //TA1CCR1 = 10000;
         TA1CCTL1 = CCIE;
-        sig0_off;
 
         stream_pos += 3;
         if (stream_pos < stream_end) {
@@ -104,6 +97,7 @@ void timer1_A1_ISR(void)
             TA1CCTL1 = 0;
             stream_pos = stream_start;
         }
+        sig0_off;
 
         //timer_a1_last_event |= TIMER_A1_EVENT_CCR1;
         //_BIC_SR_IRQ(LPM3_bits);

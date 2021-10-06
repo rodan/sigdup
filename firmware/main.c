@@ -62,9 +62,9 @@ void main_init(void)
     PJDIR = 0xffff;
 
     // output SMCLK on P3.4
-    P3OUT &= ~BIT4;
-    P3DIR |= BIT4;
-    P3SEL1 |= BIT4;
+    //P3OUT &= ~BIT4;
+    //P3DIR |= BIT4;
+    //P3SEL1 |= BIT4;
 
     sig0_on;
 }

@@ -101,23 +101,23 @@ config_macros: config.h
 
 $(OBJ_DIR)/%.o: $(DRIVERLIB)/%.c
 	@echo -e " * [drv] $(@F)"
-	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+	@$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(GLUELIB)/%.c
 	@echo -e " * [glue] $(@F)"
-	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+	@$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(GLUELIB_HAL)/%.c
 	@echo -e " * [glue-hal] $(@F)"
-	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+	@$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: %.c
 	@echo -e " * $(@F)"
-	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+	@$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
 $(EXOUTPUT): $(DRIVERLIB_OBJECTS) $(GLUELIB_OBJECTS) $(LOCAL_OBJECTS) $(EXOBJECT)
 	@echo -e "\n>> Building $@ as target $(TARGET)"
-	$(CC) $(LDFLAGS) $(DRIVERLIB_OBJECTS) $(GLUELIB_OBJECTS) $(LOCAL_OBJECTS) -o $@
+	@$(CC) $(LDFLAGS) $(DRIVERLIB_OBJECTS) $(GLUELIB_OBJECTS) $(LOCAL_OBJECTS) -o $@
 
 mkdir_od:
 	@mkdir -p $(OBJ_DIR) || echo ""

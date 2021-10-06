@@ -32,9 +32,9 @@ static uint8_t block_size = BLOCK_SIZE_1BYTE;   /// block size (in bytes) of the
 static uint16_t mask = 0xffff;  /// mask to be applied to the captured signal - set bitmask 1 to channels that are of interest. default 0xffff
 static uint8_t shift = 0;       /// left shift input signal by these many bits, so that a channel of interest lands on a particular pin on ports P1/P2
 
-LIST(sig_edges);
+#define     POLYNOMIAL_32  0xEDB88320
+#define             SMCLK  16000000
 
-#define  POLYNOMIAL_32    0xEDB88320
 
 // Holds a crc32 lookup table
 uint32_t crc32Table[256];
@@ -43,8 +43,10 @@ uint8_t crc32TableInit = 0;
 void initSwCrc32Table(void);
 void show_usage(void);
 void show_version(void);
-static int parse_signal(input_sig_t * s, replay_header_t * hdr, void *ll);
-static int save_replay(int fd, replay_header_t * hdr, sig_edge_t * ll);
+static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **replay);
+static int save_replay(int fd, replay_header_t * hdr, void **replay);
+
+LIST(replay);
 
 void show_usage(void)
 {
@@ -100,6 +102,7 @@ int main(int argc, char *argv[])
     //uint16_t last_16ch;
 
     replay_header_t replay_header;
+    list_init(replay);
 
     input_sig_t s;
 
@@ -247,9 +250,9 @@ int main(int argc, char *argv[])
 
     str_to_uint32((char *)s.sig_meta.samplerate, &freq, 0, strlen(s.sig_meta.samplerate), 0, -1);
 
-    s.sampling_interval = (1.0 / (double)freq) * 1.0E6 / (double)freq_multiplier;
+    s.sampling_interval = (1.0 / (double)freq) / (double)freq_multiplier;
     printf("%d channels sampled at %s, sampling interval of %f µs, mask is %x\n",
-           s.sig_meta.total_probes, s.sig_meta.samplerate, s.sampling_interval, mask);
+           s.sig_meta.total_probes, s.sig_meta.samplerate, s.sampling_interval * 1.0E6, mask);
 
     if (s.sig_meta.samplerate) {
         free((void *)s.sig_meta.samplerate);
@@ -295,7 +298,7 @@ int main(int argc, char *argv[])
 
     //printf("%d counts\n", rcnt);
 
-    save_replay(fdout, &replay_header, list_head(sig_edges));
+    save_replay(fdout, &replay_header, NULL);
 
     close(fdin);
     close(fdout);
@@ -304,95 +307,130 @@ int main(int argc, char *argv[])
     recursive_unlink(temp_path);
 }
 
-static int parse_signal(input_sig_t * s, replay_header_t * hdr, void *ll)
+static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **foo)
 {
     uint8_t last_8ch;
-    uint32_t period_cnt = 0;
-    ssize_t pcnt = 0;           /// replay data packet count
-    ssize_t ucnt, ucnt_stop;    /// how many clocks the signal remains unchanged
+    uint32_t parsed_cnt = 0;    /// parsed samples count
+    ssize_t pktcnt = 0;         /// replay data packet count
+    ssize_t ucnt;               /// how many clocks the signal remains unchanged
     ssize_t c;
-    sig_edge_t *edge;
+    uint32_t timer_ticks;
+    //uint8_t timer_divider;
+
+    double si = 1.0E99;         /// smallest interval between two edges
+
+    input_edge_t *edge;
+    replay_packet_8ch_t *rp;
+    replay_ll_t *re;
 
     replay_packet_8ch_t replay_packet_8ch;
     // parse sig_8ch and convert into replay stream
     memset(hdr, 0, sizeof(replay_header_t));
 
-    list_init(sig_edges);
+    LIST(input_edges);
+    list_init(input_edges);
 
-    pcnt = 0;
-    period_cnt = 0;
+    pktcnt = 0;
+    parsed_cnt = 0;
     hdr->data_checksum = 0;
 
     for (c = 0; c < s->signal_len; c++) {
-        //last_8ch = s->sig[c];
         last_8ch = s->sig[c];
 
-        ucnt_stop = min(65500, s->signal_len - c);
-
         // see for how many samples this signal remains unchanged
-        for (ucnt = 1; ucnt < ucnt_stop; ucnt++) {
+        for (ucnt = 1; ucnt < s->signal_len - c; ucnt++) {
             if (s->sig[c + ucnt] != last_8ch) {
                 break;
             }
         }
 
         // add new edge to the linked list
-        edge = (sig_edge_t *) calloc(1, sizeof(sig_edge_t));
+        edge = (input_edge_t *) calloc(1, sizeof(input_edge_t));
+
+        if (si > ucnt * s->sampling_interval) {
+            si = ucnt * s->sampling_interval;
+        }
 
         //edge->c_start = ;
         //edge->t_start = ;
         edge->c_diff_next = ucnt;
         edge->t_diff_next = ucnt * s->sampling_interval;
+        edge->t_next = ucnt * s->sampling_interval + parsed_cnt * s->sampling_interval;
         edge->sig = last_8ch;
         //edge->ccr = ;
 
-        list_add(sig_edges, edge);
+        list_add(input_edges, edge);
 
-        period_cnt += ucnt;
+        parsed_cnt += ucnt;
         c += ucnt - 1;
 
-        pcnt++;
+        pktcnt++;
     }
 
     hdr->version = 1;
-    hdr->packet_count = pcnt;
+    hdr->packet_count = pktcnt;
     hdr->bytes_per_packet = sizeof(replay_packet_8ch);
     hdr->block_size = sizeof(replay_packet_8ch.sig);
     hdr->header_size = sizeof(replay_header_t);
     hdr->header_checksum = zcrc16(hdr, sizeof(replay_header_t) - 2, 0);
 
+    printf("smallest interval is %f\r\n", si);
+
+    // calculate uc timer registers
+
+    // 1 timer tick is 1us
+    //hdr->tactl = ;// TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // SMCLK divided by 8
+    hdr->taex0 = 0x1; //TAIDEX_1; // further divide by 2
+    //timer_divider = 16;
+
+    input_edge_t *edgep;
+    for (edgep = list_head(input_edges); edgep != NULL; edgep = edgep->next) {
+
+        // add replay packet
+        rp = (replay_packet_8ch_t *) calloc(1, sizeof(replay_packet_8ch_t));
+        re = (replay_ll_t *) calloc(1, sizeof(replay_ll_t));
+        re->pkt = rp;
+
+        timer_ticks = edgep->t_next * 1.0E6;
+
+        rp->ccr = timer_ticks; // FIXME check for 2^16 overflow
+        rp->sig = edgep->sig;
+        list_add(replay, re);
+
+        printf("diff_next %fs, %uc, t_next %f,sig %x\r\n", edgep->t_diff_next, edgep->c_diff_next, edgep->t_next, edgep->sig);
+    }
+
     return EXIT_SUCCESS;
 }
 
-static int save_replay(int fd, replay_header_t * hdr, sig_edge_t * ll)
+static int save_replay(int fd, replay_header_t * hdr, void **foo)
 {
-    sig_edge_t *edge;
+    replay_ll_t *a;
+    replay_packet_8ch_t *p;
 
-    for (edge = ll; edge != NULL; edge = edge->next) {
-        printf("edge %fs, %uc, diff_next %fs, %uc, sig %u\r\n", edge->t_start, edge->c_start,
-               edge->t_diff_next, edge->c_diff_next, edge->sig);
-    }
-
-#if 0
     // output an empty header, to be filled after we have the data itself
-    if (write(fd, &replay_header, sizeof(replay_header)) != sizeof(replay_header)) {
+    if (write(fd, hdr, sizeof(replay_header_t)) != sizeof(replay_header_t)) {
         errExit("during write");
     }
 
-    if (write(fdout, &replay_packet_8ch, sizeof(replay_packet_8ch)) != sizeof(replay_packet_8ch)) {
-        errExit("during write");
-    }
-    replay_header.data_checksum =
-        zcrc16(&replay_packet_8ch, sizeof(replay_packet_8ch), replay_header.data_checksum);
+    // output the data
+    for (a = *replay; a != NULL; a = a->next) {
+        p = (replay_packet_8ch_t *) a->pkt;
 
-    // output header
-    if (pwrite(fdout, &replay_header, sizeof(replay_header), 0) != sizeof(replay_header)) {
+        if (write(fd, p, sizeof(replay_packet_8ch_t)) != sizeof(replay_packet_8ch_t) ) {
+            errExit("during write");
+        }
+
+        hdr->data_checksum =
+            zcrc16(p, sizeof(replay_packet_8ch_t), hdr->data_checksum);
+
+        printf(" sig 0x%04x  ccr %u\r\n", p->sig, p->ccr);
+    }
+
+    // output final header
+    if (pwrite(fd, hdr, sizeof(replay_header_t), 0) != sizeof(replay_header_t)) {
         errExit("during pwrite");
     }
-
-    printf("%ld data packets exported for a total of %u samples and %.02f ms\n", pcnt, period_cnt,
-           (double)(period_cnt * sampling_interval) / 1000.0);
-#endif
 
     return EXIT_SUCCESS;
 }
