@@ -11,6 +11,23 @@ LOCAL_OBJECTS     = $(LOCAL_SRC:%.c=%.o)
 
 include Makefile.inc
 
+# Append specific CFLAGS/LDFLAGS
+CFLAGS_REL	 += -Os -fdata-sections -ffunction-sections -fomit-frame-pointer
+LDFLAGS_REL	 += -Wl,-s
+CFLAGS_DBG	 += -O1 -ggdb
+LDFLAGS_DBG	 += 
+
+DEBUG := $(shell grep "^\#define CONFIG_DEBUG" config.h)
+ifeq ($(DEBUG),)
+TARGET	:= RELEASE
+CFLAGS	+= $(CFLAGS_REL)
+LDFLAGS	+= $(LDFLAGS_REL)
+else
+TARGET	:= DEBUG
+CFLAGS	+= $(CFLAGS_DBG)
+LDFLAGS	+= $(LDFLAGS_DBG)
+endif
+
 .PHONY: all
 .PHONY: clean
 .PHONY: tags

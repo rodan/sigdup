@@ -12,6 +12,7 @@
 #include "tlpi_hdr.h"
 #include "ini.h"
 #include "zcrc.h"
+#include "list.h"
 #include "pg.h"
 
 #define          BUF_SIZE  1024000
@@ -28,8 +29,10 @@ static int recursive_unlink(const char *dir);
 char *device;                   /// device name as used in the metadata file
 
 static uint8_t block_size = BLOCK_SIZE_1BYTE;   /// block size (in bytes) of the input capture
-static uint16_t mask = 0xffff;     /// mask to be applied to the captured signal - set bitmask 1 to channels that are of interest. default 0xffff
-static uint8_t shift = 0;          /// left shift input signal by these many bits, so that a channel of interest lands on a particular pin on ports P1/P2
+static uint16_t mask = 0xffff;  /// mask to be applied to the captured signal - set bitmask 1 to channels that are of interest. default 0xffff
+static uint8_t shift = 0;       /// left shift input signal by these many bits, so that a channel of interest lands on a particular pin on ports P1/P2
+
+LIST(sig_edges);
 
 #define  POLYNOMIAL_32    0xEDB88320
 
@@ -40,20 +43,24 @@ uint8_t crc32TableInit = 0;
 void initSwCrc32Table(void);
 void show_usage(void);
 void show_version(void);
-
+static int parse_signal(input_sig_t * s, replay_header_t * hdr, void *ll);
+static int save_replay(int fd, replay_header_t * hdr, sig_edge_t * ll);
 
 void show_usage(void)
 {
     printf("Usage: pg [OPTION]...\n");
-    printf("Convert PulseView capture into a highly-compressed file used to replay the signals\n\n");
+    printf
+        ("Convert PulseView capture into a highly-compressed file used to replay the signals\n\n");
     printf("mandatory options:\n");
     printf(" -i [FILE]   input PulseView '.sr' file\n");
     printf(" -o [FILE]   output converted file\n");
     printf("\n");
     printf("non-mandatory options:\n");
-    printf(" -b [NUM]    block size (in bytes) of the input capture, default %d byte(s)\n", block_size);
+    printf(" -b [NUM]    block size (in bytes) of the input capture, default %d byte(s)\n",
+           block_size);
     printf(" -m [NUM]    mask (in hex) to be applied to the input port, default 0x%x\n", mask);
-    printf(" -s [NUM]    number of bits the output signal is shifted to the left, default %d\n", shift);
+    printf(" -s [NUM]    number of bits the output signal is shifted to the left, default %d\n",
+           shift);
     printf("  --help    display this help and exit\n");
     printf("  --version output version information and exit\n");
 
@@ -72,10 +79,7 @@ int main(int argc, char *argv[])
     int opt;
     char buf[BUF_SIZE];
     ssize_t cnt, c, rcnt = 0;
-    ssize_t ucnt, ucnt_stop;    /// how many clocks the signal remains unchanged
-    ssize_t pcnt = 0;           /// replay data packet count
     uint64_t i;
-    uint32_t period_cnt = 0;
 
     // zip related
     struct zip *za;
@@ -88,17 +92,16 @@ int main(int argc, char *argv[])
     char temp_path[MAXPATH];
     uint32_t freq_multiplier = 0;
     uint32_t freq = 0;
-    double sampling_interval = 0;
 
-    uint8_t *sig_8ch;
-    uint8_t last_8ch;
-    uint16_t *sig_16ch;
-    uint16_t last_16ch;
     struct stat st;
 
+    uint8_t *sig_8ch;
+    //uint16_t *sig_16ch;
+    //uint16_t last_16ch;
+
     replay_header_t replay_header;
-    replay_packet_8ch_t replay_packet_8ch;
-    replay_packet_16ch_t replay_packet_16ch;
+
+    input_sig_t s;
 
     device = DEF_DEVICE;
 
@@ -172,9 +175,13 @@ int main(int argc, char *argv[])
                 if (zf) {
                     snprintf(temp_path, MAXPATH, ".%s", infile);
                     create_dir(temp_path);
-                    chdir(temp_path);
+                    if (chdir(temp_path) < 0) {
+                        errExit("opening temp dir");
+                    }
                     fd = open(sb.name, O_RDWR | O_TRUNC | O_CREAT, 0644);
-                    chdir("../");
+                    if (chdir("../") < 0) {
+                        errExit("opening temp dir");
+                    }
                     if (fd < 0) {
                         fprintf(stderr, "unpacking error for %s file\n", sb.name);
                         continue;
@@ -187,7 +194,9 @@ int main(int argc, char *argv[])
                             fprintf(stderr, "unpacking error for %s file\n", sb.name);
                             continue;
                         }
-                        write(fd, buf, len);
+                        if (write(fd, buf, len) != len) {
+                            errExit("unpacking file");
+                        }
                         sum += len;
                     }
 
@@ -215,61 +224,57 @@ int main(int argc, char *argv[])
     }
     close(fdin);
 
-    metadata_t sig_meta;
-    sig_meta.version = 0;
-    sig_meta.unitsize = 0;
-    sig_meta.total_probes = 0;
-    sig_meta.capturefile = NULL;
-    sig_meta.samplerate = NULL;
+    //metadata_t sig_meta;
+    s.sig_meta.version = 0;
+    s.sig_meta.unitsize = 0;
+    s.sig_meta.total_probes = 0;
+    s.sig_meta.capturefile = NULL;
+    s.sig_meta.samplerate = NULL;
 
-    if (ini_parse(temp_path, metadata_parser, &sig_meta) < 0) {
+    if (ini_parse(temp_path, metadata_parser, &s.sig_meta) < 0) {
         errExit("cannot parse metadata file");
     }
     // convert human readable samplerate into sampling_interval
-    if (strstr(sig_meta.samplerate, " MHz")) {
+    if (strstr(s.sig_meta.samplerate, " MHz")) {
         freq_multiplier = 1E6;
-    } else if (strstr(sig_meta.samplerate, " KHz")) {
+    } else if (strstr(s.sig_meta.samplerate, " kHz")) {
         freq_multiplier = 1E3;
-    } else if (strstr(sig_meta.samplerate, " Hz")) {
+    } else if (strstr(s.sig_meta.samplerate, " Hz")) {
         freq_multiplier = 1;
     } else {
         errExit("unknown input samplerate");
     }
 
-    str_to_uint32((char *)sig_meta.samplerate, &freq, 0, strlen(sig_meta.samplerate), 0, -1);
+    str_to_uint32((char *)s.sig_meta.samplerate, &freq, 0, strlen(s.sig_meta.samplerate), 0, -1);
 
-    sampling_interval = (1.0 / (double)freq) * 1.0E6 / (double)freq_multiplier;
+    s.sampling_interval = (1.0 / (double)freq) * 1.0E6 / (double)freq_multiplier;
     printf("%d channels sampled at %s, sampling interval of %f µs, mask is %x\n",
-           sig_meta.total_probes, sig_meta.samplerate, sampling_interval, mask);
+           s.sig_meta.total_probes, s.sig_meta.samplerate, s.sampling_interval, mask);
 
-    if (sig_meta.samplerate) {
-        free((void *)sig_meta.samplerate);
+    if (s.sig_meta.samplerate) {
+        free((void *)s.sig_meta.samplerate);
     }
     // metadata file parsing has ended
 
     // parse captured signal file
-    snprintf(temp_path, MAXPATH, ".%s/%s-1", infile, sig_meta.capturefile);
+    snprintf(temp_path, MAXPATH, ".%s/%s-1", infile, s.sig_meta.capturefile);
     if ((fdin = open(temp_path, O_RDONLY)) < 0) {
         errExit("opening signal file");
     }
 
-    if (sig_meta.capturefile) {
-        free((void *)sig_meta.capturefile);
+    if (s.sig_meta.capturefile) {
+        free((void *)s.sig_meta.capturefile);
     }
     // apply mask and shift to capture, send result to memory
     stat(temp_path, &st);
 
-    // parse sig_8ch and convert into replay stream
-    memset(&replay_header, 0, sizeof(replay_header));
-
     switch (block_size) {
     case BLOCK_SIZE_2BYTES:
-        sig_16ch = (uint16_t *) malloc(st.st_size * sizeof(uint16_t));
-
-        free(sig_16ch);
+        //parse_16bit_sig();
         break;
     case BLOCK_SIZE_1BYTE:
-        sig_8ch = (uint8_t *) malloc(st.st_size * sizeof(uint8_t));
+
+        sig_8ch = (uint8_t *) calloc(st.st_size, sizeof(uint8_t));
         rcnt = 0;
         while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
             for (c = 0; c < cnt; c++) {
@@ -278,60 +283,10 @@ int main(int argc, char *argv[])
                 rcnt++;
             }
         }
-
-        // output an empty header, to be filled after we have the data itself
-        if (write(fdout, &replay_header, sizeof(replay_header)) != sizeof(replay_header)) {
-            errExit("during write");
-        }
-
-        pcnt = 0;
-        period_cnt = 0;
-        replay_packet_8ch.ccr = 0;
-        replay_header.data_checksum = 0;
-
-        for (c = 0; c < rcnt; c++) {
-            last_8ch = sig_8ch[c];
-
-            ucnt_stop = min(65500, rcnt - c);
-
-            // see for how many samples this signal remains unchanged
-            for (ucnt = 1; ucnt < ucnt_stop; ucnt++) {
-                if (sig_8ch[c + ucnt] != last_8ch) {
-                    break;
-                }
-            }
-
-            replay_packet_8ch.sig = last_8ch;
-            replay_packet_8ch.ccr += ucnt;
-            period_cnt += ucnt;
-            c += ucnt - 1;
-
-            if (write(fdout, &replay_packet_8ch, sizeof(replay_packet_8ch)) !=
-                sizeof(replay_packet_8ch)) {
-                errExit("during write");
-            }
-            replay_header.data_checksum = zcrc16(&replay_packet_8ch, sizeof(replay_packet_8ch), replay_header.data_checksum);
-            pcnt++;
-
-            printf("rp %d %d\n", replay_packet_8ch.sig, replay_packet_8ch.ccr);
-        }
-
-        replay_header.version = 1;
-        replay_header.packet_count = pcnt;
-        replay_header.bytes_per_packet = sizeof(replay_packet_8ch);
-        replay_header.block_size = sizeof(replay_packet_8ch.sig);
-        replay_header.header_size = sizeof(replay_header);
-        replay_header.header_checksum = zcrc16(&replay_header, sizeof(replay_header) - 2, 0);
-
-        // output header
-        if (pwrite(fdout, &replay_header, sizeof(replay_header), 0) != sizeof(replay_header)) {
-            errExit("during pwrite");
-        }
-
+        s.signal_len = st.st_size;
+        s.sig = sig_8ch;
+        parse_signal(&s, &replay_header, NULL);
         free(sig_8ch);
-        printf("%ld data packets exported for a total of %u samples and %.02f ms\n", pcnt, period_cnt,
-               (double)(period_cnt * sampling_interval) / 1000.0);
-
         break;
     default:
         errExit("unsuported block size");
@@ -340,7 +295,112 @@ int main(int argc, char *argv[])
 
     //printf("%d counts\n", rcnt);
 
+    save_replay(fdout, &replay_header, list_head(sig_edges));
+
+    close(fdin);
+    close(fdout);
+
+    snprintf(temp_path, MAXPATH, ".%s", infile);
+    recursive_unlink(temp_path);
+}
+
+static int parse_signal(input_sig_t * s, replay_header_t * hdr, void *ll)
+{
+    uint8_t last_8ch;
+    uint32_t period_cnt = 0;
+    ssize_t pcnt = 0;           /// replay data packet count
+    ssize_t ucnt, ucnt_stop;    /// how many clocks the signal remains unchanged
+    ssize_t c;
+    sig_edge_t *edge;
+
+    replay_packet_8ch_t replay_packet_8ch;
+    // parse sig_8ch and convert into replay stream
+    memset(hdr, 0, sizeof(replay_header_t));
+
+    list_init(sig_edges);
+
+    pcnt = 0;
+    period_cnt = 0;
+    hdr->data_checksum = 0;
+
+    for (c = 0; c < s->signal_len; c++) {
+        //last_8ch = s->sig[c];
+        last_8ch = s->sig[c];
+
+        ucnt_stop = min(65500, s->signal_len - c);
+
+        // see for how many samples this signal remains unchanged
+        for (ucnt = 1; ucnt < ucnt_stop; ucnt++) {
+            if (s->sig[c + ucnt] != last_8ch) {
+                break;
+            }
+        }
+
+        // add new edge to the linked list
+        edge = (sig_edge_t *) calloc(1, sizeof(sig_edge_t));
+
+        //edge->c_start = ;
+        //edge->t_start = ;
+        edge->c_diff_next = ucnt;
+        edge->t_diff_next = ucnt * s->sampling_interval;
+        edge->sig = last_8ch;
+        //edge->ccr = ;
+
+        list_add(sig_edges, edge);
+
+        period_cnt += ucnt;
+        c += ucnt - 1;
+
+        pcnt++;
+    }
+
+    hdr->version = 1;
+    hdr->packet_count = pcnt;
+    hdr->bytes_per_packet = sizeof(replay_packet_8ch);
+    hdr->block_size = sizeof(replay_packet_8ch.sig);
+    hdr->header_size = sizeof(replay_header_t);
+    hdr->header_checksum = zcrc16(hdr, sizeof(replay_header_t) - 2, 0);
+
+    return EXIT_SUCCESS;
+}
+
+static int save_replay(int fd, replay_header_t * hdr, sig_edge_t * ll)
+{
+    sig_edge_t *edge;
+
+    for (edge = ll; edge != NULL; edge = edge->next) {
+        printf("edge %fs, %uc, diff_next %fs, %uc, sig %u\r\n", edge->t_start, edge->c_start,
+               edge->t_diff_next, edge->c_diff_next, edge->sig);
+    }
+
 #if 0
+    // output an empty header, to be filled after we have the data itself
+    if (write(fd, &replay_header, sizeof(replay_header)) != sizeof(replay_header)) {
+        errExit("during write");
+    }
+
+    if (write(fdout, &replay_packet_8ch, sizeof(replay_packet_8ch)) != sizeof(replay_packet_8ch)) {
+        errExit("during write");
+    }
+    replay_header.data_checksum =
+        zcrc16(&replay_packet_8ch, sizeof(replay_packet_8ch), replay_header.data_checksum);
+
+    // output header
+    if (pwrite(fdout, &replay_header, sizeof(replay_header), 0) != sizeof(replay_header)) {
+        errExit("during pwrite");
+    }
+
+    printf("%ld data packets exported for a total of %u samples and %.02f ms\n", pcnt, period_cnt,
+           (double)(period_cnt * sampling_interval) / 1000.0);
+#endif
+
+    return EXIT_SUCCESS;
+}
+
+#if 0
+static int parse_16bit_sig()
+{
+
     // initialize readings
     switch (block_size) {
     case BLOCK_SIZE_2BYTES:
@@ -421,14 +481,9 @@ int main(int argc, char *argv[])
     }
 
     printf("%d %lu\r\n", cll, seq_cnt);
-#endif
-
-    close(fdin);
-    close(fdout);
-
-    snprintf(temp_path, MAXPATH, ".%s", infile);
-    recursive_unlink(temp_path);
+    return EXIT_SUCCESS;
 }
+#endif
 
 #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
 
@@ -544,4 +599,3 @@ void initSwCrc32Table(void)
     // Set flag that the CRC32 table is initialized
     crc32TableInit = 1;
 }
-

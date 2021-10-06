@@ -8,6 +8,6 @@
 // this might be dead slow on HOST mode, but for fram it's great
 //#define ZMODEM_O_BYTESIZE_WRITE
 
-#define DEBUG
+#define CONFIG_DEBUG
 
 #endif

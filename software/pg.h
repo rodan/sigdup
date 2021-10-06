@@ -10,6 +10,24 @@ typedef struct {
     uint8_t unitsize;
 } metadata_t;
 
+typedef struct input_sig {
+    metadata_t sig_meta;
+    ssize_t signal_len;
+    uint8_t sample_size;
+    double sampling_interval;
+    uint8_t *sig;
+} input_sig_t;
+
+typedef struct sig_edge {
+    struct sig_edge *next;     /// linked list pointer to next edge_desc_t
+    uint32_t c_start;           /// sample count since signal start
+    double t_start;           /// microseconds since signal start when this edge was sampled
+    uint32_t c_diff_next;       /// sample counts diff until next edge or signal end
+    double t_diff_next;       /// microseconds diff until next edge or signal end
+    uint16_t sig;               /// actual signal sampled
+    uint16_t ccr;               /// timer counts
+} sig_edge_t;
+
 typedef struct {
     uint8_t version;            /// stream version
     uint8_t header_size;        /// replay_header_t size
