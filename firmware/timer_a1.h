@@ -20,7 +20,7 @@
 
 
 
-void timer_a1_init(void);
+void timer_a1_init(const uint8_t clk_divider);
 
 uint8_t timer_a1_get_event(void);
 void timer_a1_rst_event(void);

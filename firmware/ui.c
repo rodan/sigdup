@@ -68,7 +68,53 @@ void display_schedule(void)
     uart0_print("sch next ");
     uart0_print(_utoa(itoa_buf, trigger));
     uart0_print("\r\n");
+}
 
+void create_test_sig(void)
+{
+    const uint16_t pkt_cnt = 1004;
+    uint16_t c;
+
+    fram_header fram_hdr;
+    replay_header_t replay_hdr;
+    replay_packet_8ch_t pkt;
+
+    fram_hdr.file_sz = sizeof(replay_hdr) + (pkt_cnt * sizeof(replay_packet_8ch_t));
+
+    replay_hdr.version = VER_REPLAY;
+    replay_hdr.header_size = sizeof(replay_hdr);
+    replay_hdr.packet_count = pkt_cnt;
+    replay_hdr.bytes_per_packet = sizeof(replay_packet_8ch_t);
+    replay_hdr.block_size = 1;
+    replay_hdr.clk_divider = CLK_DIV_1;
+
+    fram_init();
+    fram_write_header(&fram_hdr);
+    fram_write((uint8_t *)&replay_hdr, sizeof(replay_header_t));
+
+    pkt.ccr = 0;
+
+    pkt.sig = 0xf0;
+    pkt.ccr += 1000;
+    fram_write((uint8_t *)&pkt, sizeof(pkt));
+    pkt.sig = 0x0f;
+    pkt.ccr += 1000;
+    fram_write((uint8_t *)&pkt, sizeof(pkt));
+    
+    for (c = 0; c < 1000; c++) {
+        pkt.sig = c;
+        pkt.ccr += 184;
+        fram_write((uint8_t *)&pkt, sizeof(pkt));
+    }
+
+    pkt.sig = 0xf0;
+    pkt.ccr += 1000;
+    fram_write((uint8_t *)&pkt, sizeof(pkt));
+    pkt.sig = 0x00;
+    pkt.ccr += 1000;
+    fram_write((uint8_t *)&pkt, sizeof(pkt));
+
+    prepare_signal();
 }
 
 void parse_fram(void)
@@ -272,6 +318,8 @@ void parse_user_input(void)
         print_buf_fram(HIGH_FRAM_ADDR, 256);
     } else if (strstr(input, "pa")) {
         parse_fram();
+    } else if (strstr(input, "test")) {
+        create_test_sig();
     } else if (strstr(input, "read")) {
         hdr = (fram_header *) (uintptr_t) HIGH_FRAM_ADDR;
         print_buf_fram(hdr->file_start, hdr->file_sz);

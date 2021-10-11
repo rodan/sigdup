@@ -74,4 +74,7 @@
 void check_events(void);
 void send_8ch(void);
 
+void prepare_signal(void);
+void replay_signal(void);
+
 #endif

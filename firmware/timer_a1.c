@@ -51,19 +51,57 @@ void timer_a1_set_stream_end(const uint32_t address)
     stream_end = address;
 }
 
-void timer_a1_init(void)
+// clk_divider can be one of the CLK_DIV_X defines
+void timer_a1_init(const uint8_t clk_divider)
 {
 
     __disable_interrupt();
     timer_a1_ovf = 0;
     stream_pos = 0;
     stream_end = 0;
-    TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide SMCLK by 8
-#if defined (SMCLK_FREQ_8M)
-    TA1EX0 = TAIDEX_0; // further divide SMCLK by 1
-#elif defined (SMCLK_FREQ_16M)
-    TA1EX0 = TAIDEX_1; // further divide SMCLK by 2
-#endif
+    switch (clk_divider) {
+        case CLK_DIV_1:
+            // 0.0625us per clock tick, overflow at 4.096ms
+            TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID_0; // divide by 1
+            TA1EX0 = TAIDEX_0; // further divide by 1
+            break;
+        case CLK_DIV_2:
+            // 0.125us per clock tick, overflow at 8.192ms
+            TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID_1; // divide by 2
+            TA1EX0 = TAIDEX_0; // further divide by 1
+            break;
+        case CLK_DIV_4:
+            // 0.25us per clock tick, overflow at 16.384ms
+            TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID_2; // divide by 4
+            TA1EX0 = TAIDEX_0; // further divide by 1
+            break;
+        case CLK_DIV_8:
+            // 0.5us per clock tick, overflow at 32.77ms
+            TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide by 8
+            TA1EX0 = TAIDEX_0; // further divide by 1
+            break;
+        case CLK_DIV_16:
+            // 1us per clock tick, overflow at 65.54ms
+            TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide by 8
+            TA1EX0 = TAIDEX_1; // further divide by 2
+            break;
+        case CLK_DIV_24:
+            // 2us per clock tick, overflow at 131.1ms
+            TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__4; // divide by 4
+            TA1EX0 = TAIDEX_5; // further divide by 6
+            break;
+        case CLK_DIV_32:
+            // 4us per clock tick, overflow at 262.1ms
+            TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide by 8
+            TA1EX0 = TAIDEX_3; // further divide by 4
+            break;
+        case CLK_DIV_64:
+            // 8us per clock tick, overflow at 524.3ms
+            TA1CTL = TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // divide by 8
+            TA1EX0 = TAIDEX_7; // further divide by 8
+            break;
+    }
+    TA1CTL |= TACLR;
     __enable_interrupt();
 }
 
@@ -104,7 +142,7 @@ void timer1_A1_ISR(void)
             next_ccr = pkt_8ch->ccr;
         } else {
             TA1CCTL1 = 0;
-            stream_pos = stream_start;
+            stream_pos = stream_start - 3;
         }
         sig0_off;
 

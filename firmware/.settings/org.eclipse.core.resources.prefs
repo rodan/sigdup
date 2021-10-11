@@ -1,4 +1,17 @@
 eclipse.preferences.version=1
+encoding//Debug/build/MSP430FR5994/subdir_rules.mk=UTF-8
+encoding//Debug/build/MSP430FR5994/subdir_vars.mk=UTF-8
+encoding//Debug/makefile=UTF-8
+encoding//Debug/objects.mk=UTF-8
+encoding//Debug/reference_libs_msp430/driverlib/MSP430FR5xx_6xx/subdir_rules.mk=UTF-8
+encoding//Debug/reference_libs_msp430/driverlib/MSP430FR5xx_6xx/subdir_vars.mk=UTF-8
+encoding//Debug/reference_libs_msp430/glue/MSP430FR5xx_6xx/subdir_rules.mk=UTF-8
+encoding//Debug/reference_libs_msp430/glue/MSP430FR5xx_6xx/subdir_vars.mk=UTF-8
+encoding//Debug/reference_libs_msp430/glue/subdir_rules.mk=UTF-8
+encoding//Debug/reference_libs_msp430/glue/subdir_vars.mk=UTF-8
+encoding//Debug/sources.mk=UTF-8
+encoding//Debug/subdir_rules.mk=UTF-8
+encoding//Debug/subdir_vars.mk=UTF-8
 encoding//Release/makefile=UTF-8
 encoding//Release/objects.mk=UTF-8
 encoding//Release/reference_libs_msp430/driverlib/MSP430FR5xx_6xx/subdir_rules.mk=UTF-8

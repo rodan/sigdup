@@ -1,0 +1,3 @@
+20211011
+	add test signal creation into ui.c
+	signal start is triggered by negative edge on P5.5

@@ -20,11 +20,7 @@
 #include "fram_glue.h"
 
 volatile uint8_t port5_last_event;
-
-uint8_t tcounter = 0;
-
-//uint32_t mstream_pos = 260;   /// FRAM address for the next stream data pkt
-//uint32_t mstream_end = 300;            /// FRAM address where the stream ends
+static uint8_t valid_signal = 0;
 
 void main_init(void)
 {
@@ -71,49 +67,19 @@ void main_init(void)
 
 static void button_55_irq(uint32_t msg)
 {
+	replay_signal();
+/*
     if (P5IN & BIT5) {
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, 0, TIMER_A2_EVENT_DISABLE);
-        //tcounter++;
-        //FRAMCtl_A_write8(&tcounter, (uint8_t *)(uintptr_t)HIGH_FRAM_START, 1);
-        //FRAMCtl_A_write8(&tcounter, (uint8_t *)HIGH_FRAM_ADDR, 1);
     } else {
         timer_a2_set_trigger_slot(SCHEDULE_PB_55, systime() + 100, TIMER_A2_EVENT_ENABLE);
     }
+*/
 }
 
 static void button_55_long_press_irq(uint32_t msg)
 {
-    fram_header *hdr;
-    replay_header_t *replay_hdr;
-
-    hdr = (fram_header *)(uintptr_t) HIGH_FRAM_ADDR;
-    replay_hdr = (replay_header_t *) hdr->file_start;
-
-    // perform checks on FRAM data
-    if (replay_hdr->version != 1) {
-        uart0_print("wrong version\r\n");
-        return;
-    }
-
-    if (replay_hdr->header_size + (replay_hdr->packet_count * replay_hdr->bytes_per_packet) != hdr->file_sz) {
-        uart0_print("stream length error\r\n");
-        return;
-    }
-
-    // start sending stream
-    uart0_print("go\r\n");
-
-    //stream_pos = hdr->file_start + replay_hdr->header_size;
-    //stream_end = hdr->file_start + hdr->file_sz;
-    timer_a1_set_stream_pos(hdr->file_start + replay_hdr->header_size);
-    timer_a1_set_stream_start(hdr->file_start + replay_hdr->header_size);
-    timer_a1_set_stream_end(hdr->file_start + hdr->file_sz);
-
-    TA1CCTL1 &= ~CCIE;
-    TA1CCTL1 = 0;
-    TA1CCR1 = 10;
-    TA1CCTL1 = CCIE;
-
+//    replay_signal();
 }
 
 static void button_56_irq(uint32_t msg)
@@ -234,6 +200,46 @@ void check_events(void)
     eh_exec(msg);
 }
 
+void prepare_signal(void)
+{
+    fram_header *hdr;
+    replay_header_t *replay_hdr;
+
+    hdr = (fram_header *)(uintptr_t) HIGH_FRAM_ADDR;
+    replay_hdr = (replay_header_t *) hdr->file_start;
+    valid_signal = 0;
+
+    // perform checks on FRAM data
+    if (replay_hdr->version != VER_REPLAY) {
+        uart0_print("wrong version\r\n");
+        sig0_on;
+        return;
+    }
+
+    if (replay_hdr->header_size + (replay_hdr->packet_count * replay_hdr->bytes_per_packet) != hdr->file_sz) {
+        uart0_print("stream length error\r\n");
+        sig0_on;
+        return;
+    }
+
+    uart0_print("signal ok\r\n");
+    valid_signal = 1;
+
+    timer_a1_init(replay_hdr->clk_divider);
+    timer_a1_set_stream_pos(hdr->file_start + replay_hdr->header_size - 3);
+    timer_a1_set_stream_start(hdr->file_start + replay_hdr->header_size);
+    timer_a1_set_stream_end(hdr->file_start + hdr->file_sz);
+}
+
+void replay_signal(void)
+{
+    TA1CCTL1 &= ~CCIE;
+    TA1CCTL1 = 0;
+    TA1CTL |= TACLR;
+    TA1CCR1 = 1;
+    TA1CCTL1 = CCIE;
+}
+
 int main(void)
 {
     // stop watchdog
@@ -246,7 +252,7 @@ int main(void)
     fram_init();
 
     timer_a0_init();            // uart timeout
-    timer_a1_init();            // interface - ccr1 - meas interval, ccr2 - blocking delay
+    timer_a1_init(CLK_DIV_64);  // main signal replication timer
     timer_a2_init();            // scheduler, systime()
 
     uart0_port_init();
