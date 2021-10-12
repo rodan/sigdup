@@ -1,3 +1,6 @@
 20211011
 	add test signal creation into ui.c
 	signal start is triggered by negative edge on P5.5
+
+20211012
+	CCS force gmake clean due to makefile dependency compilation error
