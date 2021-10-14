@@ -22,7 +22,7 @@ typedef struct input_sig {
     metadata_t sig_meta;
     uint32_t signal_len;
     uint8_t sample_size;
-    double sampling_interval;
+    double sampling_interval;   /// time in seconds between ADC samples
     uint8_t *sig;
 } input_sig_t;
 
