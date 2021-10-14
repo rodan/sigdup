@@ -21,12 +21,14 @@
 
 #define           MAXPATH  256
 #define        DEF_DEVICE  "device 1"
+#define   DEF_CLK_DIVIDER  CLK_DIV_16
 
 static int metadata_parser(void *user, const char *section, const char *name, const char *value);
 static void create_dir(const char *dir);
 static int recursive_unlink(const char *dir);
 
 char *device;                   /// device name as used in the metadata file
+uint8_t clk_divider = DEF_CLK_DIVIDER;
 
 static uint8_t block_size = BLOCK_SIZE_1BYTE;   /// block size (in bytes) of the input capture
 static uint16_t mask = 0xffff;  /// mask to be applied to the captured signal - set bitmask 1 to channels that are of interest. default 0xffff
@@ -37,7 +39,6 @@ static uint8_t shift = 0;       /// left shift input signal by these many bits, 
 #define     OPMODE_NORMAL  0x01
 #define    OPMODE_ANALYZE  0x02
 
-
 // Holds a crc32 lookup table
 uint32_t crc32Table[256];
 uint8_t crc32TableInit = 0;
@@ -47,7 +48,7 @@ void show_usage(void);
 void show_version(void);
 static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **replay);
 static int save_replay(int fd, replay_header_t * hdr, void **replay);
-void analyze_replay(uint8_t *buf);
+void analyze_replay(uint8_t * buf);
 
 LIST(replay);
 
@@ -68,6 +69,9 @@ void show_usage(void)
     printf(" -m [NUM]    mask (in hex) to be applied to the input port, default 0x%x\n", mask);
     printf(" -s [NUM]    number of bits the output signal is shifted to the left, default %d\n",
            shift);
+    printf
+        (" -d [NUM]      timer clock divider. can be one of the following numbers: 1,2,4,8,16,24,32,64, default %u\n",
+         DEF_CLK_DIVIDER);
     printf("  --help    display this help and exit\n");
     printf("  --version output version information and exit\n");
 
@@ -115,7 +119,7 @@ int main(int argc, char *argv[])
 
     device = DEF_DEVICE;
 
-    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:s:a:")) != -1) {
+    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:s:a:e:")) != -1) {
         switch (opt) {
         case 'b':
             hstr_to_uint8(optarg, &block_size, 0, strlen(optarg) - 1, 1, 2);
@@ -126,6 +130,17 @@ int main(int argc, char *argv[])
         case 's':
             hstr_to_uint8(optarg, &shift, 0, strlen(optarg) - 1, 0, -1);
             break;
+        case 'd':
+            clk_divider = atoi(optarg);
+            if (((clk_divider != 1) && (clk_divider != 2) && (clk_divider != 4) &&
+                 (clk_divider != 8) && (clk_divider != 16) && (clk_divider != 24) &&
+                 (clk_divider != 32) && (clk_divider != 64)) || (clk_divider > 64)) {
+                printf("error: invalid clk_div value '%u'\n", clk_divider);
+                show_usage();
+                exit(1);
+            }
+            printf("clk_div is %u\n", clk_divider);
+            break;
         case 'i':
             infile = optarg;
             break;
@@ -133,7 +148,7 @@ int main(int argc, char *argv[])
             opmode = OPMODE_ANALYZE;
             infile = optarg;
             break;
-        case 'd':
+        case 'e':
             device = optarg;
             break;
         case 'h':
@@ -151,6 +166,8 @@ int main(int argc, char *argv[])
             break;
         }
     }
+
+    printf("clk_div %u\n", clk_divider);
 
     if (opmode == OPMODE_NORMAL) {
         if ((infile == NULL) || (outfile == NULL)) {
@@ -346,15 +363,17 @@ static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **foo)
 {
     uint8_t last_8ch;
     uint32_t parsed_cnt = 0;    /// parsed samples count
-    uint32_t pktcnt = 0;         /// replay data packet count
-    uint32_t ucnt;               /// how many clocks the signal remains unchanged
+    uint32_t pktcnt = 0;        /// replay data packet count
+    uint32_t ucnt;              /// how many clocks the signal remains unchanged
     uint32_t c;
     uint32_t timer_ticks;
-    //uint8_t timer_divider;
+    uint32_t timer_ticks_remain;
+    double rsampling_int;
 
     double si = 1.0E99;         /// smallest interval between two edges
 
     input_edge_t *edge;
+    input_edge_t *edged;
     replay_packet_8ch_t *rp;
     replay_ll_t *re;
 
@@ -385,12 +404,11 @@ static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **foo)
         if (si > ucnt * s->sampling_interval) {
             si = ucnt * s->sampling_interval;
         }
-
         //edge->c_start = ;
         //edge->t_start = ;
         edge->c_diff_next = ucnt;
         edge->t_diff_next = ucnt * s->sampling_interval;
-        edge->t_next = ucnt * s->sampling_interval + parsed_cnt * s->sampling_interval;
+        edge->t_next = (ucnt + parsed_cnt) * s->sampling_interval;
         edge->sig = last_8ch;
         //edge->ccr = ;
 
@@ -408,31 +426,53 @@ static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **foo)
     hdr->block_size = sizeof(replay_packet_8ch.sig);
     hdr->header_size = sizeof(replay_header_t);
     hdr->header_checksum = zcrc16(hdr, sizeof(replay_header_t) - 2, 0);
+    rsampling_int = 1.0 / (SMCLK / clk_divider);
 
-    printf("smallest interval is %f\r\n", si);
+    printf("replay: smallest interval is %f, sampling interval is %f µs ((%u / %u) Hz)\r\n", si,
+           rsampling_int * 1.0E6, SMCLK, clk_divider);
 
     // calculate uc timer registers
 
     // 1 timer tick is 1us
     //hdr->tactl = ;// TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // SMCLK divided by 8
-    hdr->clk_divider = CLK_DIV_1; //TAIDEX_1; // further divide by 2
+    hdr->clk_divider = clk_divider;     //TAIDEX_1; // further divide by 2
     //timer_divider = 16;
 
     input_edge_t *edgep;
     for (edgep = list_head(input_edges); edgep != NULL; edgep = edgep->next) {
 
-        // add replay packet
-        rp = (replay_packet_8ch_t *) calloc(1, sizeof(replay_packet_8ch_t));
-        re = (replay_ll_t *) calloc(1, sizeof(replay_ll_t));
-        re->pkt = rp;
 
-        timer_ticks = edgep->t_next * 1.0E6;
+        timer_ticks = edgep->t_next / rsampling_int;
 
-        rp->ccr = timer_ticks; // FIXME check for 2^16 overflow
-        rp->sig = edgep->sig;
-        list_add(replay, re);
+        timer_ticks_remain = timer_ticks;
+        while (timer_ticks_remain) {
+            if (timer_ticks_remain > 65500) {
+                timer_ticks = 65500;
+            } else {
+                timer_ticks = timer_ticks_remain;
+            }
 
-        printf("diff_next %fs, %uc, t_next %f,sig %x\r\n", edgep->t_diff_next, edgep->c_diff_next, edgep->t_next, edgep->sig);
+            // add replay packet
+            rp = (replay_packet_8ch_t *) calloc(1, sizeof(replay_packet_8ch_t));
+            re = (replay_ll_t *) calloc(1, sizeof(replay_ll_t));
+            re->pkt = rp;
+
+            rp->ccr = timer_ticks;      // FIXME check for 2^16 overflow
+            rp->sig = edgep->sig;
+            list_add(replay, re);
+            timer_ticks_remain -= timer_ticks;
+
+            printf("diff_next %fs, %uc, t_next %f,sig %x\r\n", edgep->t_diff_next,
+                   edgep->c_diff_next, edgep->t_next, edgep->sig);
+        }
+    }
+
+    // free input signal's linked list
+    edgep = list_head(input_edges);
+    while (edgep != NULL) {
+        edged = edgep;
+        edgep = edgep->next;
+        free(edged);
     }
 
     return EXIT_SUCCESS;
@@ -441,23 +481,23 @@ static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **foo)
 static int save_replay(int fd, replay_header_t * hdr, void **foo)
 {
     replay_ll_t *a;
+    replay_ll_t *ad;
     replay_packet_8ch_t *p;
+    replay_packet_8ch_t *pd;
 
     // output an empty header, to be filled after we have the data itself
     if (write(fd, hdr, sizeof(replay_header_t)) != sizeof(replay_header_t)) {
         errExit("during write");
     }
-
     // output the data
     for (a = *replay; a != NULL; a = a->next) {
         p = (replay_packet_8ch_t *) a->pkt;
 
-        if (write(fd, p, sizeof(replay_packet_8ch_t)) != sizeof(replay_packet_8ch_t) ) {
+        if (write(fd, p, sizeof(replay_packet_8ch_t)) != sizeof(replay_packet_8ch_t)) {
             errExit("during write");
         }
 
-        hdr->data_checksum =
-            zcrc16(p, sizeof(replay_packet_8ch_t), hdr->data_checksum);
+        hdr->data_checksum = zcrc16(p, sizeof(replay_packet_8ch_t), hdr->data_checksum);
 
         printf(" sig 0x%04x  ccr %u\r\n", p->sig, p->ccr);
     }
@@ -465,6 +505,15 @@ static int save_replay(int fd, replay_header_t * hdr, void **foo)
     // output final header
     if (pwrite(fd, hdr, sizeof(replay_header_t), 0) != sizeof(replay_header_t)) {
         errExit("during pwrite");
+    }
+    // free replay signal's linked list
+    a = *replay;
+    while (a != NULL) {
+        ad = a;
+        pd = (replay_packet_8ch_t *) a->pkt;
+        a = a->next;
+        free(pd);
+        free(ad);
     }
 
     return EXIT_SUCCESS;
@@ -650,11 +699,11 @@ static int recursive_unlink(const char *dir)
     return ret;
 }
 
-void analyze_replay(uint8_t *buf)
+void analyze_replay(uint8_t * buf)
 {
-    uint8_t *stream_pos;   /// address for the next stream data pkt
-    uint8_t *stream_start; /// address where the stream starts
-    uint8_t *stream_end;   /// address where the stream ends
+    uint8_t *stream_pos;        /// address for the next stream data pkt
+    uint8_t *stream_start;      /// address where the stream starts
+    uint8_t *stream_end;        /// address where the stream ends
 
     uint8_t next_sig = 0;
     uint16_t next_ccr = 0;
