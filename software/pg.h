@@ -1,6 +1,14 @@
 #ifndef __PG_H_
 #define __PG_H_
 
+#define   CLK_DIV_1  1
+#define   CLK_DIV_2  2
+#define   CLK_DIV_4  4
+#define   CLK_DIV_8  8
+#define  CLK_DIV_16  16
+#define  CLK_DIV_24  24
+#define  CLK_DIV_32  32
+#define  CLK_DIV_64  64
 
 typedef struct {
     uint16_t version;
@@ -12,7 +20,7 @@ typedef struct {
 
 typedef struct input_sig {
     metadata_t sig_meta;
-    ssize_t signal_len;
+    uint32_t signal_len;
     uint8_t sample_size;
     double sampling_interval;
     uint8_t *sig;
@@ -34,8 +42,7 @@ typedef struct {
     uint16_t packet_count;      /// number of packets that follow
     uint8_t bytes_per_packet;   /// number of bytes for each packet
     uint8_t block_size;         /// defined as 1 for 8channels, 2 for 16channels
-    uint16_t tactl;             /// TAxCTL (timer control register)
-    uint16_t taex0;             /// TAxEX0 (timer expansion 0 register)
+    uint8_t clk_divider;        /// timer divider
     uint16_t data_checksum;     /// crc16 hash for all the data packets
     uint16_t header_checksum;   /// crc16 hash for replay_header_t
 } __attribute__((__packed__)) replay_header_t;

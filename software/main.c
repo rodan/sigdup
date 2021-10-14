@@ -34,6 +34,8 @@ static uint8_t shift = 0;       /// left shift input signal by these many bits, 
 
 #define     POLYNOMIAL_32  0xEDB88320
 #define             SMCLK  16000000
+#define     OPMODE_NORMAL  0x01
+#define    OPMODE_ANALYZE  0x02
 
 
 // Holds a crc32 lookup table
@@ -45,6 +47,7 @@ void show_usage(void);
 void show_version(void);
 static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **replay);
 static int save_replay(int fd, replay_header_t * hdr, void **replay);
+void analyze_replay(uint8_t *buf);
 
 LIST(replay);
 
@@ -55,7 +58,9 @@ void show_usage(void)
         ("Convert PulseView capture into a highly-compressed file used to replay the signals\n\n");
     printf("mandatory options:\n");
     printf(" -i [FILE]   input PulseView '.sr' file\n");
-    printf(" -o [FILE]   output converted file\n");
+    printf(" -o [FILE]   output replay file\n");
+    printf("or\n");
+    printf(" -a [FILE]   analyze replay file\n");
     printf("\n");
     printf("non-mandatory options:\n");
     printf(" -b [NUM]    block size (in bytes) of the input capture, default %d byte(s)\n",
@@ -80,8 +85,9 @@ int main(int argc, char *argv[])
     char *outfile = NULL;
     int opt;
     char buf[BUF_SIZE];
-    ssize_t cnt, c, rcnt = 0;
+    uint32_t cnt, c, rcnt = 0;
     uint64_t i;
+    uint8_t opmode = OPMODE_NORMAL;
 
     // zip related
     struct zip *za;
@@ -98,6 +104,7 @@ int main(int argc, char *argv[])
     struct stat st;
 
     uint8_t *sig_8ch;
+    uint8_t *sig_replay;
     //uint16_t *sig_16ch;
     //uint16_t last_16ch;
 
@@ -108,7 +115,7 @@ int main(int argc, char *argv[])
 
     device = DEF_DEVICE;
 
-    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:s:")) != -1) {
+    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:s:a:")) != -1) {
         switch (opt) {
         case 'b':
             hstr_to_uint8(optarg, &block_size, 0, strlen(optarg) - 1, 1, 2);
@@ -120,6 +127,10 @@ int main(int argc, char *argv[])
             hstr_to_uint8(optarg, &shift, 0, strlen(optarg) - 1, 0, -1);
             break;
         case 'i':
+            infile = optarg;
+            break;
+        case 'a':
+            opmode = OPMODE_ANALYZE;
             infile = optarg;
             break;
         case 'd':
@@ -141,16 +152,40 @@ int main(int argc, char *argv[])
         }
     }
 
-    if ((infile == NULL) || (outfile == NULL)) {
-        printf("Error: provide input and output files\n");
-        show_usage();
-        exit(1);
+    if (opmode == OPMODE_NORMAL) {
+        if ((infile == NULL) || (outfile == NULL)) {
+            printf("Error: provide input and output files\n");
+            show_usage();
+            exit(1);
+        }
+    } else if (opmode == OPMODE_ANALYZE) {
+        if (infile == NULL) {
+            printf("Error: provide input file\n");
+            show_usage();
+            exit(1);
+        }
+    }
+
+    if ((fdin = open(infile, O_RDONLY)) < 0) {
+        errExit("opening input file");
     }
 
     initSwCrc32Table();
 
-    if ((fdin = open(infile, O_RDONLY)) < 0) {
-        errExit("opening input file");
+    if (opmode == OPMODE_ANALYZE) {
+        stat(infile, &st);
+
+        sig_replay = (uint8_t *) calloc(st.st_size, sizeof(uint8_t));
+
+        if (read(fdin, sig_replay, st.st_size) < 0) {
+            errExit("reading input file");
+        }
+
+        analyze_replay(sig_replay);
+
+        close(fdin);
+        free(sig_replay);
+        return 0;
     }
     close(fdin);
 
@@ -311,9 +346,9 @@ static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **foo)
 {
     uint8_t last_8ch;
     uint32_t parsed_cnt = 0;    /// parsed samples count
-    ssize_t pktcnt = 0;         /// replay data packet count
-    ssize_t ucnt;               /// how many clocks the signal remains unchanged
-    ssize_t c;
+    uint32_t pktcnt = 0;         /// replay data packet count
+    uint32_t ucnt;               /// how many clocks the signal remains unchanged
+    uint32_t c;
     uint32_t timer_ticks;
     //uint8_t timer_divider;
 
@@ -380,7 +415,7 @@ static int parse_signal(input_sig_t * s, replay_header_t * hdr, void **foo)
 
     // 1 timer tick is 1us
     //hdr->tactl = ;// TASSEL__SMCLK + MC__CONTINOUS + TACLR + ID__8; // SMCLK divided by 8
-    hdr->taex0 = 0x1; //TAIDEX_1; // further divide by 2
+    hdr->clk_divider = CLK_DIV_1; //TAIDEX_1; // further divide by 2
     //timer_divider = 16;
 
     input_edge_t *edgep;
@@ -613,6 +648,41 @@ static int recursive_unlink(const char *dir)
     }
 
     return ret;
+}
+
+void analyze_replay(uint8_t *buf)
+{
+    uint8_t *stream_pos;   /// address for the next stream data pkt
+    uint8_t *stream_start; /// address where the stream starts
+    uint8_t *stream_end;   /// address where the stream ends
+
+    uint8_t next_sig = 0;
+    uint16_t next_ccr = 0;
+
+    replay_header_t *hdr;
+    hdr = (replay_header_t *) buf;
+
+    printf(" header\r\n");
+    printf("             version  %u\r\n", hdr->version);
+    printf("         header_size  %u\r\n", hdr->header_size);
+    printf("        packet_count  %u\r\n", hdr->packet_count);
+    printf("    bytes_per_packet  %u\r\n", hdr->bytes_per_packet);
+    printf("          block_size  %u\r\n", hdr->block_size);
+    printf("         clk_divider  %u\r\n", hdr->clk_divider);
+    printf("       data_checksum  0x%04x\r\n", hdr->data_checksum);
+    printf("     header_checksum  0x%04x\r\n", hdr->header_checksum);
+    printf("\r\n");
+
+    stream_start = (uint8_t *) (buf + hdr->header_size);
+    stream_end = (uint8_t *) (buf + hdr->header_size + (hdr->packet_count * 3));
+    stream_pos = stream_start;
+
+    while (stream_pos < stream_end) {
+        next_sig = *((uint8_t *) stream_pos);
+        next_ccr = *((uint16_t *) (stream_pos + 1));
+        printf(" sig 0x%04x  ccr %u\r\n", next_sig, next_ccr);
+        stream_pos += 3;
+    }
 }
 
 // CRC32 table - used by both msp430 and lrzsz

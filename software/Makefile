@@ -42,9 +42,9 @@ version.h: $(SRC)
 	@./tools/setver.sh
 
 $(TLPI_LIB): force_look
-	echo "looking into subdir $(TLPI_DIR)"
-	cd $(TLPI_DIR); $(MAKE) $(MFLAGS)
-	cd -
+	@echo "looking into subdir $(TLPI_DIR)"
+	@cd $(TLPI_DIR) && $(MAKE) -j1 $(MFLAGS)
+	@cd -
 
 %.o: %.c
 	@echo -e " * $(@F)"
