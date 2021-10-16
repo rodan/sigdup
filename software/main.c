@@ -15,7 +15,7 @@
 #include "zcrc.h"
 #include "list.h"
 #include "pg.h"
-#include "mng.h"
+#include "sig_mng.h"
 
 #define          BUF_SIZE  1024000
 #define  BLOCK_SIZE_1BYTE  1
@@ -335,8 +335,9 @@ int main(int argc, char *argv[])
         }
         s.signal_len = st.st_size;
         s.sig = sig_8ch;
+        memset(&replay_header, 0, sizeof(replay_header_t));
         replay_header.clk_divider = clk_divider;
-        parse_signal(&s, &replay_header, &replay);
+        parse_pulseview(&s, &replay_header, &replay);
         free(sig_8ch);
         break;
     default:

@@ -1,14 +1,16 @@
 #ifndef __PG_H_
 #define __PG_H_
 
-#define   CLK_DIV_1  1
-#define   CLK_DIV_2  2
-#define   CLK_DIV_4  4
-#define   CLK_DIV_8  8
-#define  CLK_DIV_16  16
-#define  CLK_DIV_24  24
-#define  CLK_DIV_32  32
-#define  CLK_DIV_64  64
+#define      CLK_DIV_1  1
+#define      CLK_DIV_2  2
+#define      CLK_DIV_4  4
+#define      CLK_DIV_8  8
+#define     CLK_DIV_16  16
+#define     CLK_DIV_24  24
+#define     CLK_DIV_32  32
+#define     CLK_DIV_64  64
+
+#define   BLACKOUT_INT  12e-6 // it takes about 12us to prepare an edge and recover to normal operation
 
 typedef struct {
     uint16_t version;
@@ -23,7 +25,7 @@ typedef struct input_sig {
     uint32_t signal_len;
     uint8_t sample_size;
     double sampling_interval;   /// time in seconds between ADC samples
-    uint8_t *sig;
+    uint8_t *sig;               /// actual input pulseview signal
 } input_sig_t;
 
 typedef struct input_edge {
@@ -35,6 +37,18 @@ typedef struct input_edge {
     double t_next;              /// time until next edge
     uint16_t sig;               /// actual signal sampled
 } input_edge_t;
+
+typedef struct sim_replay {
+    double *edge_ref;           /// reference edges from the input signal
+    double *edge_sim;           /// simulated edges
+    uint32_t edge_cnt;          /// number of edges in input signal
+    uint32_t smclk;             /// microcontroller master clock
+    uint8_t clk_divider;        /// divider applied to smclk
+    double max_tia_err;         /// maximum time interval error
+    double avg_tia_err;         /// average time interval error
+    double deviation;           /// standard deviation
+    uint32_t blackout_err;      /// counter for transitions that happen within the uc processing timeframe
+} sim_replay_t;
 
 typedef struct {
     uint8_t version;            /// replay stream version
