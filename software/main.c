@@ -25,6 +25,10 @@
 #define        DEF_DEVICE  "device 1"
 #define   DEF_CLK_DIVIDER  CLK_DIV_16
 
+const uint8_t clk_dividers[CLK_DIV_CNT] = { CLK_DIV_1, CLK_DIV_2, CLK_DIV_4, CLK_DIV_8, CLK_DIV_16,
+    CLK_DIV_24, CLK_DIV_32, CLK_DIV_64
+};
+
 static int metadata_parser(void *user, const char *section, const char *name, const char *value);
 static void create_dir(const char *dir);
 static int recursive_unlink(const char *dir);
@@ -53,8 +57,7 @@ LIST(replay);
 void show_usage(void)
 {
     printf("Usage: pg [OPTION]...\n");
-    printf
-        ("Convert PulseView capture into a highly-compressed file used to replay the signals\n\n");
+    printf("Convert PulseView capture into a highly-compressed file used to replay the signals\n\n");
     printf("mandatory options:\n");
     printf(" -i [FILE]   input PulseView '.sr' file\n");
     printf(" -o [FILE]   output replay file\n");
@@ -62,11 +65,9 @@ void show_usage(void)
     printf(" -a [FILE]   analyze replay file\n");
     printf("\n");
     printf("non-mandatory options:\n");
-    printf(" -b [NUM]    block size (in bytes) of the input capture, default %d byte(s)\n",
-           block_size);
+    printf(" -b [NUM]    block size (in bytes) of the input capture, default %d byte(s)\n", block_size);
     printf(" -m [NUM]    mask (in hex) to be applied to the input port, default 0x%x\n", mask);
-    printf(" -s [NUM]    number of bits the output signal is shifted to the left, default %d\n",
-           shift);
+    printf(" -s [NUM]    number of bits the output signal is shifted to the left, default %d\n", shift);
     printf
         (" -d [NUM]      timer clock divider. can be one of the following numbers: 1,2,4,8,16,24,32,64, default %u\n",
          DEF_CLK_DIVIDER);
@@ -411,8 +412,7 @@ static int recursive_unlink(const char *dir)
         case FTS_NS:
         case FTS_DNR:
         case FTS_ERR:
-            fprintf(stderr, "%s: fts_read error: %s\n",
-                    curr->fts_accpath, strerror(curr->fts_errno));
+            fprintf(stderr, "%s: fts_read error: %s\n", curr->fts_accpath, strerror(curr->fts_errno));
             break;
 
         case FTS_DC:
@@ -433,8 +433,7 @@ static int recursive_unlink(const char *dir)
         case FTS_SLNONE:
         case FTS_DEFAULT:
             if (remove(curr->fts_accpath) < 0) {
-                fprintf(stderr, "%s: Failed to remove: %s\n",
-                        curr->fts_path, strerror(curr->fts_errno));
+                fprintf(stderr, "%s: Failed to remove: %s\n", curr->fts_path, strerror(curr->fts_errno));
                 ret = -1;
             }
             break;
@@ -447,7 +446,6 @@ static int recursive_unlink(const char *dir)
 
     return ret;
 }
-
 
 // CRC32 table - used by both msp430 and lrzsz
 void initSwCrc32Table(void)

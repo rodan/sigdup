@@ -10,6 +10,8 @@
 #define     CLK_DIV_32  32
 #define     CLK_DIV_64  64
 
+#define    CLK_DIV_CNT  8
+
 #define   BLACKOUT_INT  12e-6 // it takes about 12us to prepare an edge and recover to normal operation
 
 typedef struct {
@@ -34,7 +36,7 @@ typedef struct input_edge {
     double t_start;             /// microseconds since signal start when this edge was sampled
     uint32_t c_diff_next;       /// sample counts diff until next edge or signal end
     double t_diff_next;         /// microseconds diff until next edge or signal end
-    double t_next;              /// time until next edge
+    double t_abs;               /// absolute time for the next edge (t0 is at signal start)
     uint16_t sig;               /// actual signal sampled
 } input_edge_t;
 
@@ -44,9 +46,11 @@ typedef struct sim_replay {
     uint32_t edge_cnt;          /// number of edges in input signal
     uint32_t smclk;             /// microcontroller master clock
     uint8_t clk_divider;        /// divider applied to smclk
+    double min_tia_err;         /// minimum non-zero time interval error
     double max_tia_err;         /// maximum time interval error
     double avg_tia_err;         /// average time interval error
     double deviation;           /// standard deviation
+    uint32_t replay_pkt_cnt;    /// packet count for replay
     uint32_t blackout_err;      /// counter for transitions that happen within the uc processing timeframe
 } sim_replay_t;
 
