@@ -25,8 +25,9 @@
 #define        DEF_DEVICE  "device 1"
 #define   DEF_CLK_DIVIDER  CLK_DIV_16
 
-const uint8_t clk_dividers[CLK_DIV_CNT] = { CLK_DIV_1, CLK_DIV_2, CLK_DIV_4, CLK_DIV_8, CLK_DIV_16,
-    CLK_DIV_24, CLK_DIV_32, CLK_DIV_64
+const uint8_t clk_dividers[CLK_DIV_CNT] = { CLK_DIV_1, CLK_DIV_2, CLK_DIV_3, CLK_DIV_4, CLK_DIV_5, CLK_DIV_6,
+    CLK_DIV_7, CLK_DIV_8, CLK_DIV_10, CLK_DIV_12, CLK_DIV_14, CLK_DIV_16, CLK_DIV_20, CLK_DIV_24,
+    CLK_DIV_28, CLK_DIV_32, CLK_DIV_40, CLK_DIV_48, CLK_DIV_56, CLK_DIV_64
 };
 
 static int metadata_parser(void *user, const char *section, const char *name, const char *value);

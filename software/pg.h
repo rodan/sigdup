@@ -3,14 +3,26 @@
 
 #define      CLK_DIV_1  1
 #define      CLK_DIV_2  2
+#define      CLK_DIV_3  3
 #define      CLK_DIV_4  4
+#define      CLK_DIV_5  5
+#define      CLK_DIV_6  6
+#define      CLK_DIV_7  7
 #define      CLK_DIV_8  8
+#define     CLK_DIV_10  10
+#define     CLK_DIV_12  12
+#define     CLK_DIV_14  14
 #define     CLK_DIV_16  16
+#define     CLK_DIV_20  20
 #define     CLK_DIV_24  24
+#define     CLK_DIV_28  28
 #define     CLK_DIV_32  32
+#define     CLK_DIV_40  40
+#define     CLK_DIV_48  48
+#define     CLK_DIV_56  56
 #define     CLK_DIV_64  64
 
-#define    CLK_DIV_CNT  8
+#define    CLK_DIV_CNT  20
 
 #define   BLACKOUT_INT  12e-6 // it takes about 12us to prepare an edge and recover to normal operation
 
@@ -49,9 +61,12 @@ typedef struct sim_replay {
     double min_tia_err;         /// minimum non-zero time interval error
     double max_tia_err;         /// maximum time interval error
     double avg_tia_err;         /// average time interval error
+    double avg_tia_err_res;     /// rescaled 0..100 value for the average time interval error
     double deviation;           /// standard deviation
     uint32_t replay_pkt_cnt;    /// packet count for replay
+    double replay_pkt_cnt_res;  /// rescaled 0..100 value for the packet count
     uint32_t blackout_err;      /// counter for transitions that happen within the uc processing timeframe
+    double score;
 } sim_replay_t;
 
 typedef struct {
