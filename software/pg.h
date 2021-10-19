@@ -1,6 +1,8 @@
 #ifndef __PG_H_
 #define __PG_H_
 
+/// all timer clock dividers available for
+/// the target microcontroller (MSP430FR5994)
 #define      CLK_DIV_1  1
 #define      CLK_DIV_2  2
 #define      CLK_DIV_3  3
@@ -24,7 +26,9 @@
 
 #define    CLK_DIV_CNT  20
 
-#define   BLACKOUT_INT  12e-6 // it takes about 12us to prepare an edge and recover to normal operation
+/// it takes about 12us to prepare an edge and recover to normal operation
+/// any signal that needs faster transitions will get non-null blackout_err values
+#define   BLACKOUT_INT  12e-6
 
 typedef struct {
     uint16_t version;
