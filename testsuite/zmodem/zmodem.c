@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include "config.h"
 
-int fdout;
+static int fdout;
 
 #else
 #include "proj.h"
@@ -22,9 +22,9 @@ int fdout;
 #include "uart3.h"
 #include "uart0_extras.h"
 #include "fram_glue.h"
-#include "helper.h"
+#include "lib_convert.h"
 
-char z_buf[CONV_BASE_10_BUF_SZ];
+//char z_buf[CONV_BASE_10_BUF_SZ];
 
 #endif
 
@@ -138,6 +138,8 @@ struct {
 #define PROTOSTATE_RX_IDLE           0
 #define PROTOSTATE_RX_WAIT           1
 #define PROTOSTATE_RX_TRANSFER       2
+
+volatile uint8_t zmodem_last_event;
 
 #ifdef HOST
 #ifdef DEBUG
@@ -826,7 +828,7 @@ void zmodem_send_hex_header(const uint8_t type, void *data)
     for (i = 0; i < 4; i++)
         buffer[i + 1] = ((uint8_t *) data)[i];
     ZDEBUG("Send hex header: %x %x %x %x %x\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
-    crc = crc16(buffer, 5, 0);
+    crc = zcrc16(buffer, 5, 0);
     ztx_byte(ZPAD);
     ztx_byte(ZPAD);
     ztx_byte(ZDLE);
@@ -851,7 +853,7 @@ void zmodem_send_bin_header(const uint8_t type, void *data)
     for (i = 0; i < 4; i++)
         buffer[i + 1] = ((uint8_t *) data)[i];
     ZDEBUG("Send bin header: %x %x %x %x %x\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
-    crc = crc16(buffer, 5, 0);
+    crc = zcrc16(buffer, 5, 0);
     ztx_byte(ZPAD);
     ztx_byte(ZDLE);
     ztx_byte(ZHEX);
@@ -870,7 +872,7 @@ void zmodem_send_bin32_header(const uint8_t type, void *data)
     for (i = 0; i < 4; i++)
         buffer[i + 1] = ((uint8_t *) data)[i];
     ZDEBUG("Send bin32 header: %x %x %x %x %x\n", buffer[0], buffer[1], buffer[2], buffer[3], buffer[4]);
-    crc = crc32(buffer, 5, 0);
+    crc = zcrc32(buffer, 5, 0);
     ztx_byte(ZPAD);
     ztx_byte(ZDLE);
     ztx_byte(ZHEX);
@@ -1032,7 +1034,7 @@ void zrx_byte(uint8_t byte)
                 break;
             }
             if (zstate.count == 1 && (byte & 0x7f) == '\n') {
-                uint16_t crc = crc16(zstate.header, 5, 0);
+                uint16_t crc = zcrc16(zstate.header, 5, 0);
                 uint16_t rxcrc = zstate.crc[1] | (zstate.crc[0] << 8);
                 ZDEBUG("CRC calculated: %x, received %x\n", crc, rxcrc);
                 if (crc == rxcrc) {
@@ -1056,7 +1058,7 @@ void zrx_byte(uint8_t byte)
         case STATE_HEADER_ZBIN_CRC:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 2) {
-                uint16_t crc = crc16(zstate.header, 5, 0);
+                uint16_t crc = zcrc16(zstate.header, 5, 0);
                 uint16_t rxcrc = zstate.crc[1] | (zstate.crc[0] << 8);
                 ZDEBUG("CRC calculated: %x, received %x\n", crc, rxcrc);
                 if (crc == rxcrc) {
@@ -1070,7 +1072,7 @@ void zrx_byte(uint8_t byte)
         case STATE_HEADER_ZBIN32_CRC:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 4) {
-                uint32_t crc = crc32(zstate.header, 5, 0);
+                uint32_t crc = zcrc32(zstate.header, 5, 0);
                 uint32_t rxcrc = (uint32_t) zstate.crc[0] | ((uint32_t) zstate.crc[1] << 8) | ((uint32_t) zstate.crc[2] << 16) | ((uint32_t) zstate.crc[3] << 24);
                 ZDEBUG("CRC calculated: %x, received %x\n", crc, rxcrc);
                 if (crc == rxcrc) {
@@ -1166,7 +1168,7 @@ void zrx_byte(uint8_t byte)
                 uint16_t crc = crc16bs_end();
 #else
                 zstate.buffer[zstate.datalen] = zstate.frametype;
-                uint16_t crc = crc16(zstate.buffer, zstate.datalen+1, 0);
+                uint16_t crc = zcrc16(zstate.buffer, zstate.datalen+1, 0);
 #endif
                 uint16_t rxcrc = zstate.crc[1] | (zstate.crc[0] << 8);
                 ZDEBUG("CRC is %x, received %x, len is %d\n", crc, rxcrc, zstate.datalen);
@@ -1199,7 +1201,7 @@ void zrx_byte(uint8_t byte)
                 uint32_t crc = crc32bs_end();
 #else
                 zstate.buffer[zstate.datalen] = zstate.frametype;
-                uint32_t crc = crc32(zstate.buffer, zstate.datalen+1, 0);
+                uint32_t crc = zcrc32(zstate.buffer, zstate.datalen+1, 0);
                 //crc = crc32(&zstate.frametype, 1, crc);
 #endif
                 uint32_t rxcrc = (uint32_t) zstate.crc[0] | ((uint32_t) zstate.crc[1] << 8) | ((uint32_t) zstate.crc[2] << 16) | ((uint32_t) zstate.crc[3] << 24);
@@ -1242,6 +1244,16 @@ void zrx_byte(uint8_t byte)
         }
         zstate.zdlecount = 0;
     }
+}
+
+uint8_t zmodem_get_event(void)
+{
+    return zmodem_last_event;
+}
+
+void zmodem_rst_event(void)
+{
+    zmodem_last_event = ZMODEM_EVENT_NONE;
 }
 
 #ifdef HOST

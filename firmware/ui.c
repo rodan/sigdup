@@ -26,6 +26,8 @@ void display_menu(void)
     uart0_print(" \e[33;1mread\e[0m - read HIFRAM\r\n");
     uart0_print(" \e[33;1mpeek\e[0m - peek HIFRAM\r\n");
     uart0_print(" \e[33;1mpa\e[0m   - parse HIFRAM\r\n");
+    uart0_print(" \e[33;1mprep\e[0m - prepare signal\r\n");
+    uart0_print(" \e[33;1mtest\e[0m - generate test signal\r\n");
 }
 
 void display_DONE(void)
@@ -318,6 +320,8 @@ void parse_user_input(void)
         print_buf_fram(HIGH_FRAM_ADDR, 256);
     } else if (strstr(input, "pa")) {
         parse_fram();
+    } else if (strstr(input, "prep")) {
+        prepare_signal();
     } else if (strstr(input, "test")) {
         create_test_sig();
     } else if (strstr(input, "read")) {

@@ -118,6 +118,12 @@ static void uart0_rx_irq(uint32_t msg)
     }
 }
 
+static void zmodem_rcvrdy_irq(uint32_t msg)
+{
+    sig0_on;
+    uart0_print("zzzzzzzzzzzzzzzzzzzzzzzzzzz\r\n");
+}
+
 void check_events(void)
 {
     uint32_t msg = SYS_MSG_NULL;
@@ -195,6 +201,12 @@ void check_events(void)
             msg |= SYS_MSG_P56_INT;
             port5_last_event ^= BIT6;
         }
+    }
+    // zmodem 
+    ev = zmodem_get_event();
+    if (ev) {
+        msg |= SYS_MSG_ZMODEM_RCVRDY;
+        zmodem_rst_event();
     }
 
     eh_exec(msg);
@@ -281,6 +293,8 @@ int main(void)
     eh_register(&button_56_long_press_irq, SYS_MSG_P56_TMOUT_INT);
 
     eh_register(&scheduler_irq, SYS_MSG_TIMERA2_CCR1);
+    
+    eh_register(&zmodem_rcvrdy_irq, SYS_MSG_ZMODEM_RCVRDY);
 
     // Reset IRQ flags
     P5IFG &= ~(BIT5 | BIT6);

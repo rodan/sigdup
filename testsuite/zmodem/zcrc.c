@@ -61,7 +61,7 @@ uint32_t bytesize_crc32;
 #endif
 
 #ifdef HW_CRC16
-uint16_t crc16(const void *data, uint16_t length, uint16_t crc)
+uint16_t zcrc16(const void *data, uint16_t length, uint16_t crc)
 {
     const uint8_t *buffer = data;
     uint16_t i;
@@ -97,7 +97,7 @@ uint16_t crc16bs_end(void)
 
 
 #else
-uint16_t crc16(const void *data, uint16_t length, uint16_t crc)
+uint16_t zcrc16(const void *data, uint16_t length, uint16_t crc)
 {
     const uint8_t *buffer = data;
     while (length--)
@@ -119,7 +119,7 @@ void crc16bs_upd(const uint8_t c)
 {
     uint8_t buf;
     buf = c;
-    bytesize_crc16 = crc16(&buf, 1, bytesize_crc16);
+    bytesize_crc16 = zcrc16(&buf, 1, bytesize_crc16);
 }
 
 uint16_t crc16bs_end(void)
@@ -132,7 +132,7 @@ uint16_t crc16bs_end(void)
 #endif
 
 #ifdef HW_CRC32
-uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
+uint32_t zcrc32(const void *data, uint16_t length, uint32_t crc)
 {
     const uint8_t *buffer = data;
     uint16_t i;
@@ -181,7 +181,7 @@ uint32_t crc32bs_end(void)
 #endif
 
 #else
-uint32_t crc32(const void *data, uint16_t length, uint32_t crc)
+uint32_t zcrc32(const void *data, uint16_t length, uint32_t crc)
 {
     const uint8_t *buffer = data;
     crc = ~crc;
@@ -204,7 +204,7 @@ void crc32bs_upd(const uint8_t c)
 {
     uint8_t buf;
     buf = c;
-    bytesize_crc32 = crc32(&buf, 1, bytesize_crc32);
+    bytesize_crc32 = zcrc32(&buf, 1, bytesize_crc32);
 }
 
 uint32_t crc32bs_end(void)

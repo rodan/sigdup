@@ -185,7 +185,7 @@ void timer1_A1_ISR(void)
     uint16_t iv = TA1IV;
 
     if (iv == TAIV__TACCR1) {
-        sig0_on;
+        //sig0_on;
         P3OUT = next_sig;
         TA1CCTL1 = 0;
         //next_ccr += 10000;
@@ -204,7 +204,7 @@ void timer1_A1_ISR(void)
             TA1CCTL1 = 0;
             stream_pos = stream_start - 3;
         }
-        sig0_off;
+        //sig0_off;
 
         //timer_a1_last_event |= TIMER_A1_EVENT_CCR1;
         //_BIC_SR_IRQ(LPM3_bits);

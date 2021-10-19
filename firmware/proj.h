@@ -40,6 +40,7 @@
 #define        SYS_MSG_TIMERA1_CCR2  0x8      // timer_a1_delay_noblk_ccr2
 #define          SYS_MSG_TIMER0_IFG  0x10     // timer0 overflow
 #define            SYS_MSG_UART0_RX  0x20     // UART received something
+#define       SYS_MSG_ZMODEM_RCVRDY  0x40     // a file was received via zmodem
 //#define                              0x40     // 
 //#define                              0x80     // 
 //#define                              0x100    // 

@@ -53,13 +53,16 @@
 
 #ifdef ZMODEM_O_BYTESIZE_WRITE
 // this version of the buffer only needs to hold zmodem headers
-#define ZMODEM_BUFFER_SIZE  128
-#define  ZMODEM_FRAME_SIZE  1024
+#define   ZMODEM_BUFFER_SIZE  128
+#define    ZMODEM_FRAME_SIZE  1024
 #else
 // this version of the buffer holds zmodem headers and the 1kbyte data block
-#define ZMODEM_BUFFER_SIZE  1024
-#define  ZMODEM_FRAME_SIZE  ZMODEM_BUFFER_SIZE
+#define   ZMODEM_BUFFER_SIZE  1024
+#define    ZMODEM_FRAME_SIZE  ZMODEM_BUFFER_SIZE
 #endif
+
+#define    ZMODEM_EVENT_NONE  0
+#define  ZMODEM_EVENT_RCVRDY  0x1 /// file fully received 
 
 
 #ifdef USE_LFS
@@ -76,5 +79,8 @@ uint8_t zmodem_debug(void);
 void zmodem_setactive(void);
 uint8_t zmodem_active(void);
 uint8_t zmodem_waiting(void);
+
+uint8_t zmodem_get_event(void);
+void zmodem_rst_event(void);
 
 #endif /* ZMODEM_H */

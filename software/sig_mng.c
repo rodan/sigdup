@@ -28,7 +28,8 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
     double avg_tia_max = 0;
     uint32_t replay_pkt_cnt_max = 0;
     double score_max = 0;
-    uint8_t clk_divider_preferred = hdr->clk_divider;
+    uint8_t clk_divider_forced = hdr->clk_divider; /// 0 if the divider should be detected automatically
+    uint8_t clk_divider_optimal = 1;
     uint8_t impossible_to_replay = 1;
 
     input_edge_t *edge;
@@ -92,6 +93,7 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
         sim[c].clk_divider = clk_dividers[c];
         simulate_replay(&sim[c]);
 
+        // get the packet count for every simulation
         hdr->clk_divider = clk_dividers[c];
         hdr->packet_count = 0;
         if (sim[c].blackout_err == 0) {
@@ -130,10 +132,10 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
         // pick the best clk_divider
         if (sim[c].score > score_max) {
             score_max = sim[c].score;
-            clk_divider_preferred = sim[c].clk_divider;
+            clk_divider_optimal = sim[c].clk_divider;
         }
 
-        printf("|  %u\t|  %.4fus\t|  %.4fus\t|  %.4fus\t|  %u\t|  %u\t|  %2.1f\t|\r\n",
+        printf("|  %u\t|  %.4fus\t|  %.4fus\t|  %.4fus\t|  %u\t|  %u\t|  %.0f\t|\r\n",
                sim[c].clk_divider, sim[c].min_tia_err * 1e6, sim[c].max_tia_err * 1e6, sim[c].avg_tia_err * 1e6,
                sim[c].blackout_err, sim[c].replay_pkt_cnt, sim[c].score);
     }
@@ -150,12 +152,16 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
             free(edged);
         }
         return EXIT_FAILURE;
-    } else {
-        printf("selected divider: %u\r\n", clk_divider_preferred);
     }
 
     // generate replay stream with the best divider
-    hdr->clk_divider = clk_divider_preferred;
+    if (clk_divider_forced) {
+        hdr->clk_divider = clk_divider_forced;
+        printf("  optimal divider: %u, generating using forced divider: %u\r\n", clk_divider_optimal, clk_divider_forced);
+    } else {
+        hdr->clk_divider = clk_divider_optimal;
+        printf("  optimal divider: %u\r\n", clk_divider_optimal);
+    }
     hdr->version = 1;
     hdr->bytes_per_packet = sizeof(replay_packet_8ch);
     hdr->block_size = sizeof(replay_packet_8ch.sig);

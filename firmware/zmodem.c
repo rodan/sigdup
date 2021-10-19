@@ -139,6 +139,8 @@ struct {
 #define PROTOSTATE_RX_WAIT           1
 #define PROTOSTATE_RX_TRANSFER       2
 
+volatile uint8_t zmodem_last_event;
+
 #ifdef HOST
 #ifdef DEBUG
 #define ZDEBUG(...) fprintf(stderr, __VA_ARGS__)
@@ -1218,6 +1220,7 @@ void zrx_byte(uint8_t byte)
 #endif
 #ifdef __MSP430__
                 if (crc == rxcrc) {
+                    zmodem_last_event = ZMODEM_EVENT_RCVRDY;
                     sig1_on;
                 } else {
                     sig0_on;
@@ -1242,6 +1245,16 @@ void zrx_byte(uint8_t byte)
         }
         zstate.zdlecount = 0;
     }
+}
+
+uint8_t zmodem_get_event(void)
+{
+    return zmodem_last_event;
+}
+
+void zmodem_rst_event(void)
+{
+    zmodem_last_event = ZMODEM_EVENT_NONE;
 }
 
 #ifdef HOST

@@ -35,7 +35,7 @@ static void create_dir(const char *dir);
 static int recursive_unlink(const char *dir);
 
 char *device;                   /// device name as used in the metadata file
-uint8_t clk_divider = DEF_CLK_DIVIDER;
+uint8_t clk_divider = 0;
 
 static uint8_t block_size = BLOCK_SIZE_1BYTE;   /// block size (in bytes) of the input capture
 static uint16_t mask = 0xffff;  /// mask to be applied to the captured signal - set bitmask 1 to channels that are of interest. default 0xffff
@@ -57,6 +57,8 @@ LIST(replay);
 
 void show_usage(void)
 {
+    uint8_t c;
+
     printf("Usage: pg [OPTION]...\n");
     printf("Convert PulseView capture into a highly-compressed file used to replay the signals\n\n");
     printf("mandatory options:\n");
@@ -66,15 +68,17 @@ void show_usage(void)
     printf(" -a [FILE]   analyze replay file\n");
     printf("\n");
     printf("non-mandatory options:\n");
-    printf(" -b [NUM]    block size (in bytes) of the input capture, default %d byte(s)\n", block_size);
-    printf(" -m [NUM]    mask (in hex) to be applied to the input port, default 0x%x\n", mask);
-    printf(" -s [NUM]    number of bits the output signal is shifted to the left, default %d\n", shift);
-    printf
-        (" -d [NUM]      timer clock divider. can be one of the following numbers: 1,2,4,8,16,24,32,64, default %u\n",
-         DEF_CLK_DIVIDER);
-    printf("  --help    display this help and exit\n");
-    printf("  --version output version information and exit\n");
-
+    printf(" -b [NUM]    block size (in bytes) of the input capture, default: %d\n", block_size);
+    printf(" -m [NUM]    mask (in hex) to be applied to the input port, default: 0x%x\n", mask);
+    printf(" -s [NUM]    number of bits the output signal is shifted to the left, default: %d\n", shift);
+    printf(" -d [NUM]    force timer clock divider. can be one of the following numbers:\r\n");
+    printf("               ");
+    for (c=0; c<CLK_DIV_CNT; c++) {
+        printf("%u,", clk_dividers[c]);
+    }
+    printf(" default: auto\n");
+    printf(" -h          display this help and exit\n");
+    printf(" -v          output version information and exit\n");
 }
 
 void show_version(void)
@@ -92,6 +96,7 @@ int main(int argc, char *argv[])
     uint32_t cnt, c, rcnt = 0;
     uint64_t i;
     uint8_t opmode = OPMODE_NORMAL;
+    uint8_t clk_divider_opt;
 
     // zip related
     struct zip *za;
@@ -131,11 +136,14 @@ int main(int argc, char *argv[])
             hstr_to_uint8(optarg, &shift, 0, strlen(optarg) - 1, 0, -1);
             break;
         case 'd':
-            clk_divider = atoi(optarg);
-            if (((clk_divider != 1) && (clk_divider != 2) && (clk_divider != 4) &&
-                 (clk_divider != 8) && (clk_divider != 16) && (clk_divider != 24) &&
-                 (clk_divider != 32) && (clk_divider != 64)) || (clk_divider > 64)) {
-                printf("error: invalid clk_div value '%u'\n", clk_divider);
+            clk_divider_opt = atoi(optarg);
+            for (i=0; i<CLK_DIV_CNT; i++) {
+                if (clk_divider_opt == clk_dividers[i]) {
+                    clk_divider = clk_divider_opt;
+                }
+            }
+            if (clk_divider == 0) {
+                printf("error: invalid clk_div value '%u'\n", clk_divider_opt);
                 show_usage();
                 exit(1);
             }
