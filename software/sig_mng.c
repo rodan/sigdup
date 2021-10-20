@@ -83,7 +83,7 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
         c++;
     }
 
-    printf("  div\t   min error \t   max error \t   avg err \t       blk     pkts        score  \n");
+    printf("   div     min error       max error       avg err         blk     pkts    score  \n");
 
     for (c = 0; c < CLK_DIV_CNT; c++) {
         sim[c].edge_ref = edge_ref;
@@ -164,7 +164,7 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
     hdr->block_size = sizeof(replay_packet_8ch.sig);
     hdr->header_size = sizeof(replay_header_t);
 
-    generate_replay(hdr, replay_ll, ALLOC | VERBOSE);
+    generate_replay(hdr, replay_ll, ALLOC); // | VERBOSE);
 
     // free input signal's linked list
     edgep = list_head(input_edges);
@@ -227,19 +227,21 @@ void simulate_replay(sim_replay_t * sim)
 
 int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t flags)
 {
-    uint32_t timer_ticks;
-    uint32_t timer_ticks_remain;
+    uint32_t timer_ticks_abs_edge;      /// absolute number of timer ticks at the next edge
+    uint32_t timer_ticks_remain;        /// number of ticks still needed to be packaged for the current edge
+    uint32_t timer_ticks_replayed = 0;  /// total number of timer ticks packaged until now
+    uint32_t timer_ticks_temp;
     double rsampling_int;
 
     input_edge_t *edgep;
+    uint32_t edge_cnt = 0;
     replay_packet_8ch_t *rp;
     replay_ll_t *re;
 
     rsampling_int = 1.0 / (SMCLK / hdr->clk_divider);
 
     if (flags & VERBOSE) {
-        printf("replay: sampling interval is %f µs ((%u / %u) Hz)\n", rsampling_int * 1.0E6, SMCLK,
-               hdr->clk_divider);
+        printf("  replay: sampling interval is %f µs\n", rsampling_int * 1.0E6);
     }
 
     hdr->packet_count = 0;
@@ -247,14 +249,14 @@ int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t 
     // calculate uc timer registers
     for (edgep = list_head(input_edges); edgep != NULL; edgep = edgep->next) {
 
-        timer_ticks = edgep->t_abs / rsampling_int;
+        timer_ticks_abs_edge = edgep->t_abs / rsampling_int;
+        timer_ticks_remain = timer_ticks_abs_edge - timer_ticks_replayed;
 
-        timer_ticks_remain = timer_ticks;
         while (timer_ticks_remain) {
-            if (timer_ticks_remain > 65500) {
-                timer_ticks = 65500;
+            if (timer_ticks_remain > 65535) {
+                timer_ticks_temp = 65535;
             } else {
-                timer_ticks = timer_ticks_remain;
+                timer_ticks_temp = timer_ticks_remain;
             }
 
             if (flags & ALLOC) {
@@ -263,19 +265,21 @@ int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t 
                 re = (replay_ll_t *) calloc(1, sizeof(replay_ll_t));
                 re->pkt = rp;
 
-                rp->ccr = timer_ticks;
+                rp->ccr = timer_ticks_replayed + timer_ticks_temp;
                 rp->sig = edgep->sig;
                 list_add(*replay_ll, re);
             }
 
-            hdr->packet_count++;
-            timer_ticks_remain -= timer_ticks;
+            timer_ticks_remain -= timer_ticks_temp;
+            timer_ticks_replayed += timer_ticks_temp;
 
             if (flags & VERBOSE) {
-                printf("diff_next %fs, %uc, t_abs %f,sig %x\n", edgep->t_diff_next,
-                       edgep->c_diff_next, edgep->t_abs, edgep->sig);
+                printf(" e%u.p%u diff_next %fus, %uc, t_abs %f, sig %x, ticks %u/%u/%u/%u\n", edge_cnt, hdr->packet_count, edgep->t_diff_next * 1.0e6,
+                       edgep->c_diff_next, edgep->t_abs, edgep->sig, timer_ticks_remain, timer_ticks_temp, timer_ticks_replayed, timer_ticks_abs_edge);
             }
+            hdr->packet_count++;
         }
+        edge_cnt++;
     }
 
     return EXIT_SUCCESS;
@@ -303,7 +307,7 @@ int8_t save_replay(int fd, replay_header_t * hdr, list_t * replay_ll)
 
         hdr->data_checksum = zcrc16(p, sizeof(replay_packet_8ch_t), hdr->data_checksum);
 
-        printf(" sig 0x%04x  ccr %u\n", p->sig, p->ccr);
+        //printf("%u sig 0x%04x  ccr %u\n", hdr->packet_count, p->sig, p->ccr);
         hdr->packet_count++;
     }
 

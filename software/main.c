@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
     str_to_uint32((char *)s.sig_meta.samplerate, &freq, 0, strlen(s.sig_meta.samplerate), 0, -1);
 
     s.sampling_interval = (1.0 / (double)freq) / (double)freq_multiplier;
-    printf("%d channels sampled at %s, sampling interval of %f µs, mask is %x\n",
+    printf("  input file contains %d channels sampled at %s, sampling interval of %f µs, mask is %x\n",
            s.sig_meta.total_probes, s.sig_meta.samplerate, s.sampling_interval * 1.0E6, mask);
 
     if (s.sig_meta.samplerate) {
@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
 
     switch (s.sig_meta.unitsize) {
     case 2:
-        printf("file len is %lu\n", st.st_size);
+        //printf("file len is %lu\n", st.st_size);
         sig_8ch = (uint8_t *) calloc(st.st_size/2, sizeof(uint8_t));
         rcnt = 0;
         while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
