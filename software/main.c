@@ -21,7 +21,7 @@
 #define  BLOCK_SIZE_1BYTE  1
 #define BLOCK_SIZE_2BYTES  2
 
-#define           MAXPATH  256
+#define           MAXPATH  1024
 #define        DEF_DEVICE  "device 1"
 #define   DEF_CLK_DIVIDER  CLK_DIV_16
 
@@ -68,10 +68,11 @@ void show_usage(void)
     printf(" -a [FILE]   analyze replay file\n");
     printf("\n");
     printf("non-mandatory options:\n");
-    printf(" -b [NUM]    block size (in bytes) of the input capture, default: %d\n", block_size);
-    printf(" -m [NUM]    mask (in hex) to be applied to the input port, default: 0x%x\n", mask);
-    printf(" -s [NUM]    number of bits the output signal is shifted to the left, default: %d\n", shift);
-    printf(" -d [NUM]    force timer clock divider. can be one of the following numbers:\r\n");
+    printf(" -k [NAME]   pulseview metadata name for input file, default: '%s'\r\n", DEF_DEVICE);
+    printf(" -b [DEC]    block size (in bytes) of the input capture, default: %d\n", block_size);
+    printf(" -m [HEX]    mask (in hex) to be applied to the input port, default: 0x%x\n", mask);
+    printf(" -s [DEC]    number of bits the output signal is shifted to the left, default: %d\n", shift);
+    printf(" -d [DEC]    force timer clock divider. can be one of the following numbers:\r\n");
     printf("               ");
     for (c=0; c<CLK_DIV_CNT; c++) {
         printf("%u,", clk_dividers[c]);
@@ -124,7 +125,7 @@ int main(int argc, char *argv[])
 
     device = DEF_DEVICE;
 
-    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:s:a:e:")) != -1) {
+    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:s:a:k:")) != -1) {
         switch (opt) {
         case 'b':
             hstr_to_uint8(optarg, &block_size, 0, strlen(optarg) - 1, 1, 2);
@@ -155,7 +156,7 @@ int main(int argc, char *argv[])
             opmode = OPMODE_ANALYZE;
             infile = optarg;
             break;
-        case 'e':
+        case 'k':
             device = optarg;
             break;
         case 'h':
