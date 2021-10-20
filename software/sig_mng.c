@@ -70,7 +70,7 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
         edge_cnt++;
     }
 
-    //printf("list has %u edges\r\n", edge_cnt);
+    //printf("list has %u edges\n", edge_cnt);
 
     // fill an array with the edges present in the input signal
     edge_ref = (double *)calloc(edge_cnt, sizeof(double));
@@ -83,8 +83,7 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
         c++;
     }
 
-    printf("+--  simulation  ---------------------------------------------------------------+\r\n");
-    printf("| div\t|  min error \t|  max error \t|  avg err \t|  blk  |  pkts | score |\r\n");
+    printf("  div\t   min error \t   max error \t   avg err \t       blk     pkts        score  \n");
 
     for (c = 0; c < CLK_DIV_CNT; c++) {
         sim[c].edge_ref = edge_ref;
@@ -135,16 +134,14 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
             clk_divider_optimal = sim[c].clk_divider;
         }
 
-        printf("|  %u\t|  %.4fus\t|  %.4fus\t|  %.4fus\t|  %u\t|  %u\t|  %.0f\t|\r\n",
+        printf("    %u\t    %.4fus\t    %.4fus\t    %.4fus\t    %u\t    %u\t    %.0f\n",
                sim[c].clk_divider, sim[c].min_tia_err * 1e6, sim[c].max_tia_err * 1e6, sim[c].avg_tia_err * 1e6,
                sim[c].blackout_err, sim[c].replay_pkt_cnt, sim[c].score);
     }
-    printf("+-------------------------------------------------------------------------------+\r\n");
-
     free(edge_ref);
 
     if (impossible_to_replay) {
-        printf("input signal has transitions that can't be replayed on the target microcontroller, exiting\r\n");
+        printf("input signal has transitions that can't be replayed on the target microcontroller, exiting\n");
         edgep = list_head(input_edges);
         while (edgep != NULL) {
             edged = edgep;
@@ -157,10 +154,10 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
     // generate replay stream with the best divider
     if (clk_divider_forced) {
         hdr->clk_divider = clk_divider_forced;
-        printf("  optimal divider: %u, generating using forced divider: %u\r\n", clk_divider_optimal, clk_divider_forced);
+        printf("  optimal divider: %u, generating using forced divider: %u\n", clk_divider_optimal, clk_divider_forced);
     } else {
         hdr->clk_divider = clk_divider_optimal;
-        printf("  optimal divider: %u\r\n", clk_divider_optimal);
+        printf("  optimal divider: %u\n", clk_divider_optimal);
     }
     hdr->version = 1;
     hdr->bytes_per_packet = sizeof(replay_packet_8ch);
@@ -241,7 +238,7 @@ int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t 
     rsampling_int = 1.0 / (SMCLK / hdr->clk_divider);
 
     if (flags & VERBOSE) {
-        printf("replay: sampling interval is %f µs ((%u / %u) Hz)\r\n", rsampling_int * 1.0E6, SMCLK,
+        printf("replay: sampling interval is %f µs ((%u / %u) Hz)\n", rsampling_int * 1.0E6, SMCLK,
                hdr->clk_divider);
     }
 
@@ -275,7 +272,7 @@ int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t 
             timer_ticks_remain -= timer_ticks;
 
             if (flags & VERBOSE) {
-                printf("diff_next %fs, %uc, t_abs %f,sig %x\r\n", edgep->t_diff_next,
+                printf("diff_next %fs, %uc, t_abs %f,sig %x\n", edgep->t_diff_next,
                        edgep->c_diff_next, edgep->t_abs, edgep->sig);
             }
         }
@@ -306,7 +303,7 @@ int8_t save_replay(int fd, replay_header_t * hdr, list_t * replay_ll)
 
         hdr->data_checksum = zcrc16(p, sizeof(replay_packet_8ch_t), hdr->data_checksum);
 
-        printf(" sig 0x%04x  ccr %u\r\n", p->sig, p->ccr);
+        printf(" sig 0x%04x  ccr %u\n", p->sig, p->ccr);
         hdr->packet_count++;
     }
 
@@ -341,16 +338,16 @@ void analyze_replay(uint8_t * buf)
     replay_header_t *hdr;
     hdr = (replay_header_t *) buf;
 
-    printf(" header\r\n");
-    printf("             version  %u\r\n", hdr->version);
-    printf("         header_size  %u\r\n", hdr->header_size);
-    printf("        packet_count  %u\r\n", hdr->packet_count);
-    printf("    bytes_per_packet  %u\r\n", hdr->bytes_per_packet);
-    printf("          block_size  %u\r\n", hdr->block_size);
-    printf("         clk_divider  %u\r\n", hdr->clk_divider);
-    printf("       data_checksum  0x%04x\r\n", hdr->data_checksum);
-    printf("     header_checksum  0x%04x\r\n", hdr->header_checksum);
-    printf("\r\n");
+    printf(" header\n");
+    printf("             version  %u\n", hdr->version);
+    printf("         header_size  %u\n", hdr->header_size);
+    printf("        packet_count  %u\n", hdr->packet_count);
+    printf("    bytes_per_packet  %u\n", hdr->bytes_per_packet);
+    printf("          block_size  %u\n", hdr->block_size);
+    printf("         clk_divider  %u\n", hdr->clk_divider);
+    printf("       data_checksum  0x%04x\n", hdr->data_checksum);
+    printf("     header_checksum  0x%04x\n", hdr->header_checksum);
+    printf("\n");
 
     stream_start = (uint8_t *) (buf + hdr->header_size);
     stream_end = (uint8_t *) (buf + hdr->header_size + (hdr->packet_count * 3));
@@ -359,7 +356,7 @@ void analyze_replay(uint8_t * buf)
     while (stream_pos < stream_end) {
         next_sig = *((uint8_t *) stream_pos);
         next_ccr = *((uint16_t *) (stream_pos + 1));
-        printf(" sig 0x%04x  ccr %u\r\n", next_sig, next_ccr);
+        printf(" sig 0x%04x  ccr %u\n", next_sig, next_ccr);
         stream_pos += 3;
     }
 }

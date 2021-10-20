@@ -18,9 +18,6 @@
 #include "sig_mng.h"
 
 #define          BUF_SIZE  1024000
-#define  BLOCK_SIZE_1BYTE  1
-#define BLOCK_SIZE_2BYTES  2
-
 #define           MAXPATH  1024
 #define        DEF_DEVICE  "device 1"
 #define   DEF_CLK_DIVIDER  CLK_DIV_16
@@ -37,9 +34,9 @@ static int recursive_unlink(const char *dir);
 char *device;                   /// device name as used in the metadata file
 uint8_t clk_divider = 0;
 
-static uint8_t block_size = BLOCK_SIZE_1BYTE;   /// block size (in bytes) of the input capture
 static uint16_t mask = 0xffff;  /// mask to be applied to the captured signal - set bitmask 1 to channels that are of interest. default 0xffff
-static uint8_t shift = 0;       /// left shift input signal by these many bits, so that a channel of interest lands on a particular pin on ports P1/P2
+static uint8_t lshift = 0;      /// left shift input signal by these many bits, so that a channel of interest lands on a particular pin on ports P3
+static uint8_t rshift = 0;      /// right shift input signal by these many bits, so that a channel of interest lands on a particular pin on ports P3
 
 #define     POLYNOMIAL_32  0xEDB88320
 #define     OPMODE_NORMAL  0x01
@@ -68,11 +65,11 @@ void show_usage(void)
     printf(" -a [FILE]   analyze replay file\n");
     printf("\n");
     printf("non-mandatory options:\n");
-    printf(" -k [NAME]   pulseview metadata name for input file, default: '%s'\r\n", DEF_DEVICE);
-    printf(" -b [DEC]    block size (in bytes) of the input capture, default: %d\n", block_size);
+    printf(" -k [NAME]   pulseview metadata name for input file, default: '%s'\n", DEF_DEVICE);
     printf(" -m [HEX]    mask (in hex) to be applied to the input port, default: 0x%x\n", mask);
-    printf(" -s [DEC]    number of bits the output signal is shifted to the left, default: %d\n", shift);
-    printf(" -d [DEC]    force timer clock divider. can be one of the following numbers:\r\n");
+    printf(" -l [DEC]    number of bits the output signal is shifted to the left, default: %d\n", lshift);
+    printf(" -r [DEC]    number of bits the output signal is shifted to the right, default: %d\n", rshift);
+    printf(" -d [DEC]    force timer clock divider. can be one of the following numbers:\n");
     printf("               ");
     for (c=0; c<CLK_DIV_CNT; c++) {
         printf("%u,", clk_dividers[c]);
@@ -94,6 +91,7 @@ int main(int argc, char *argv[])
     char *outfile = NULL;
     int opt;
     char buf[BUF_SIZE];
+    uint16_t sig16;
     uint32_t cnt, c, rcnt = 0;
     uint64_t i;
     uint8_t opmode = OPMODE_NORMAL;
@@ -125,16 +123,16 @@ int main(int argc, char *argv[])
 
     device = DEF_DEVICE;
 
-    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:s:a:k:")) != -1) {
+    while ((opt = getopt(argc, argv, "hvb:i:o:d:m:l:r:a:k:")) != -1) {
         switch (opt) {
-        case 'b':
-            hstr_to_uint8(optarg, &block_size, 0, strlen(optarg) - 1, 1, 2);
-            break;
         case 'm':
             hstr_to_uint16(optarg, &mask, 0, strlen(optarg) - 1, 0, -1);
             break;
-        case 's':
-            hstr_to_uint8(optarg, &shift, 0, strlen(optarg) - 1, 0, -1);
+        case 'l':
+            hstr_to_uint8(optarg, &lshift, 0, strlen(optarg) - 1, 0, -1);
+            break;
+        case 'r':
+            hstr_to_uint8(optarg, &rshift, 0, strlen(optarg) - 1, 0, -1);
             break;
         case 'd':
             clk_divider_opt = atoi(optarg);
@@ -329,17 +327,44 @@ int main(int argc, char *argv[])
     // apply mask and shift to capture, send result to memory
     stat(temp_path, &st);
 
-    switch (block_size) {
-    case BLOCK_SIZE_2BYTES:
-        //parse_16bit_sig();
+    switch (s.sig_meta.unitsize) {
+    case 2:
+        printf("file len is %lu\n", st.st_size);
+        sig_8ch = (uint8_t *) calloc(st.st_size/2, sizeof(uint8_t));
+        rcnt = 0;
+        while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
+            for (c = 0; c < cnt/2; c++) {
+                sig16 = *(uint16_t *) (buf + (c * 2));
+                if (lshift) {
+                    sig_8ch[rcnt] = (sig16 & mask) << lshift;
+                } else if (rshift) {
+                    sig_8ch[rcnt] = (sig16 & mask) >> rshift;
+                } else {
+                    sig_8ch[rcnt] = sig16 & mask;
+                }
+                //printf("%x ", sig_8ch[rcnt]);
+                rcnt++;
+            }
+        }
+        s.signal_len = st.st_size/2;
+        s.sig = sig_8ch;
+        memset(&replay_header, 0, sizeof(replay_header_t));
+        replay_header.clk_divider = clk_divider;
+        parse_pulseview(&s, &replay_header, &replay);
+        free(sig_8ch);
         break;
-    case BLOCK_SIZE_1BYTE:
-
+    case 1:
         sig_8ch = (uint8_t *) calloc(st.st_size, sizeof(uint8_t));
         rcnt = 0;
         while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
             for (c = 0; c < cnt; c++) {
-                sig_8ch[rcnt] = (buf[c] & (mask & 0xff)) << shift;
+                if (lshift) {
+                    sig_8ch[rcnt] = (buf[c] & (mask & 0xff)) << lshift;
+                } else if (rshift) {
+                    sig_8ch[rcnt] = (buf[c] & (mask & 0xff)) >> rshift;
+                } else {
+                    sig_8ch[rcnt] = buf[c] & (mask & 0xff);
+                }
                 //printf("%c", sig_8ch[rcnt]);
                 rcnt++;
             }
@@ -352,7 +377,8 @@ int main(int argc, char *argv[])
         free(sig_8ch);
         break;
     default:
-        errExit("unsuported block size");
+        fprintf(stderr, "unsuported block size\n");
+        exit(1);
         break;
     }
 
