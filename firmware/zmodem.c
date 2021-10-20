@@ -750,6 +750,7 @@ void zmodem_process_header(void)
 #endif
         // exit zmodem parsing mode
         zmodem_exit();
+        zmodem_last_event = ZMODEM_EVENT_RCVRDY;
         break;
     case ZRPOS:
         zmodem_process_zrpos();
@@ -1220,7 +1221,6 @@ void zrx_byte(uint8_t byte)
 #endif
 #ifdef __MSP430__
                 if (crc == rxcrc) {
-                    zmodem_last_event = ZMODEM_EVENT_RCVRDY;
                     sig1_on;
                 } else {
                     sig0_on;

@@ -120,8 +120,7 @@ static void uart0_rx_irq(uint32_t msg)
 
 static void zmodem_rcvrdy_irq(uint32_t msg)
 {
-    sig0_on;
-    uart0_print("zzzzzzzzzzzzzzzzzzzzzzzzzzz\r\n");
+    prepare_signal();
 }
 
 void check_events(void)
