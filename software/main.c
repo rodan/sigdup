@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <fts.h>
@@ -18,7 +19,7 @@
 #include "sig_mng.h"
 
 #define          BUF_SIZE  1024000
-#define           MAXPATH  1024
+#define           MAXPATH  256
 #define        DEF_DEVICE  "device 1"
 #define   DEF_CLK_DIVIDER  CLK_DIV_16
 
@@ -28,7 +29,6 @@ const uint8_t clk_dividers[CLK_DIV_CNT] = { CLK_DIV_1, CLK_DIV_2, CLK_DIV_3, CLK
 };
 
 static int metadata_parser(void *user, const char *section, const char *name, const char *value);
-static void create_dir(const char *dir);
 static int recursive_unlink(const char *dir);
 
 char *device;                   /// device name as used in the metadata file
@@ -71,7 +71,7 @@ void show_usage(void)
     printf(" -r [DEC]    number of bits the output signal is shifted to the right, default: %d\n", rshift);
     printf(" -d [DEC]    force timer clock divider. can be one of the following numbers:\n");
     printf("               ");
-    for (c=0; c<CLK_DIV_CNT; c++) {
+    for (c = 0; c < CLK_DIV_CNT; c++) {
         printf("%u,", clk_dividers[c]);
     }
     printf(" default: auto\n");
@@ -105,16 +105,14 @@ int main(int argc, char *argv[])
     int len;
     int fd;
     long long sum;
-    char temp_path[MAXPATH];
+    char temp_file[MAXPATH];
+    char *temp_dir;
+    char temp_template[] = "/tmp/pg.XXXXXX";
     uint32_t freq_multiplier = 0;
     uint32_t freq = 0;
-
     struct stat st;
-
     uint8_t *sig_8ch;
     uint8_t *sig_replay;
-    //uint16_t *sig_16ch;
-    //uint16_t last_16ch;
 
     replay_header_t replay_header;
     list_init(replay);
@@ -136,7 +134,7 @@ int main(int argc, char *argv[])
             break;
         case 'd':
             clk_divider_opt = atoi(optarg);
-            for (i=0; i<CLK_DIV_CNT; i++) {
+            for (i = 0; i < CLK_DIV_CNT; i++) {
                 if (clk_divider_opt == clk_dividers[i]) {
                     clk_divider = clk_divider_opt;
                 }
@@ -220,6 +218,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    temp_dir = mkdtemp(temp_template);
+    if (temp_dir == NULL) {
+        errExit("creating temp dir");
+    }
+    if (chdir(temp_dir) < 0) {
+        errExit("opening temp dir");
+    }
+
     for (i = 0; i < zip_get_num_entries(za, 0); i++) {
         if (zip_stat_index(za, i, 0, &sb) == 0) {
             //printf("==================/n");
@@ -232,20 +238,14 @@ int main(int argc, char *argv[])
             } else {
                 zf = zip_fopen_index(za, i, 0);
                 if (zf) {
-                    snprintf(temp_path, MAXPATH, ".%s", infile);
-                    create_dir(temp_path);
-                    if (chdir(temp_path) < 0) {
-                        errExit("opening temp dir");
-                    }
                     fd = open(sb.name, O_RDWR | O_TRUNC | O_CREAT, 0644);
-                    if (chdir("../") < 0) {
-                        errExit("opening temp dir");
-                    }
+                    //if (chdir("../") < 0) {
+                    //    errExit("opening temp dir");
+                    //}
                     if (fd < 0) {
                         fprintf(stderr, "unpacking error for %s file\n", sb.name);
                         continue;
                     }
-
                     sum = 0;
                     while (sum != sb.size) {
                         len = zip_fread(zf, buf, 100);
@@ -277,8 +277,8 @@ int main(int argc, char *argv[])
         errExit("can't close zip archive");
     }
     // parse metadata file
-    snprintf(temp_path, MAXPATH, ".%s/metadata", infile);
-    if ((fdin = open(temp_path, O_RDONLY)) < 0) {
+    snprintf(temp_file, MAXPATH, "%s/metadata", temp_dir);
+    if ((fdin = open(temp_file, O_RDONLY)) < 0) {
         errExit("opening metadata file");
     }
     close(fdin);
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
     s.sig_meta.capturefile = NULL;
     s.sig_meta.samplerate = NULL;
 
-    if (ini_parse(temp_path, metadata_parser, &s.sig_meta) < 0) {
+    if (ini_parse(temp_file, metadata_parser, &s.sig_meta) < 0) {
         errExit("cannot parse metadata file");
     }
     // convert human readable samplerate into sampling_interval
@@ -316,8 +316,8 @@ int main(int argc, char *argv[])
     // metadata file parsing has ended
 
     // parse captured signal file
-    snprintf(temp_path, MAXPATH, ".%s/%s-1", infile, s.sig_meta.capturefile);
-    if ((fdin = open(temp_path, O_RDONLY)) < 0) {
+    snprintf(temp_file, MAXPATH, "%s/%s-1", temp_dir, s.sig_meta.capturefile);
+    if ((fdin = open(temp_file, O_RDONLY)) < 0) {
         errExit("opening signal file");
     }
 
@@ -325,15 +325,15 @@ int main(int argc, char *argv[])
         free((void *)s.sig_meta.capturefile);
     }
     // apply mask and shift to capture, send result to memory
-    stat(temp_path, &st);
+    stat(temp_file, &st);
 
     switch (s.sig_meta.unitsize) {
     case 2:
         //printf("file len is %lu\n", st.st_size);
-        sig_8ch = (uint8_t *) calloc(st.st_size/2, sizeof(uint8_t));
+        sig_8ch = (uint8_t *) calloc(st.st_size / 2, sizeof(uint8_t));
         rcnt = 0;
         while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
-            for (c = 0; c < cnt/2; c++) {
+            for (c = 0; c < cnt / 2; c++) {
                 sig16 = *(uint16_t *) (buf + (c * 2));
                 if (lshift) {
                     sig_8ch[rcnt] = (sig16 & mask) << lshift;
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
                 rcnt++;
             }
         }
-        s.signal_len = st.st_size/2;
+        s.signal_len = st.st_size / 2;
         s.sig = sig_8ch;
         memset(&replay_header, 0, sizeof(replay_header_t));
         replay_header.clk_divider = clk_divider;
@@ -389,8 +389,7 @@ int main(int argc, char *argv[])
     close(fdin);
     close(fdout);
 
-    snprintf(temp_path, MAXPATH, ".%s", infile);
-    recursive_unlink(temp_path);
+    recursive_unlink(temp_dir);
 }
 
 #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
@@ -411,15 +410,6 @@ static int metadata_parser(void *user, const char *section, const char *name, co
         return 0;
     }
     return 1;
-}
-
-static void create_dir(const char *dir)
-{
-    if (mkdir(dir, 0755) < 0) {
-        if (errno != EEXIST) {
-            errExit("mkdir failed");
-        }
-    }
 }
 
 static int recursive_unlink(const char *dir)
