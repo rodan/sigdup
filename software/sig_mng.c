@@ -28,7 +28,7 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
     double avg_tia_max = 0;
     uint32_t replay_pkt_cnt_max = 0;
     double score_max = 0;
-    uint8_t clk_divider_forced = hdr->clk_divider; /// 0 if the divider should be detected automatically
+    uint8_t clk_divider_forced = hdr->clk_divider;      /// 0 if the divider should be detected automatically
     uint8_t clk_divider_optimal = 1;
     uint8_t impossible_to_replay = 1;
 
@@ -77,10 +77,12 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
 
     // run simulations with different timer dividers
 
-    c = 0;
-    for (edgep = list_head(input_edges); edgep != NULL; edgep = edgep->next) {
+    //c = 0;
+    //for (edgep = list_head(input_edges); edgep != NULL; edgep = edgep->next) {
+    edgep = list_head(input_edges);
+    for (c = 0; c < edge_cnt; c++) {
         edge_ref[c] = edgep->t_abs;
-        c++;
+        edgep = edgep->next;
     }
 
     printf("   div     min error       max error       avg err         blk     pkts    score  \n");
@@ -120,13 +122,19 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
 
         if (replay_pkt_cnt_max) {
             sim[c].replay_pkt_cnt_res = sim[c].replay_pkt_cnt * 100.0 / replay_pkt_cnt_max;
+            if (sim[c].replay_pkt_cnt_res == 0) {
+                sim[c].replay_pkt_cnt_res = 100;
+            }
         } else {
             // if replay_pkt_cnt_max is zero then blackout_err has been trigerred for EVERY div simulation
             // which is very bad
             sim[c].replay_pkt_cnt_res = 100;
         }
 
-        sim[c].score = 50.0 / sim[c].avg_tia_err_res + 49.0 / sim[c].replay_pkt_cnt_res + 1.0 / sim[c].clk_divider;
+        // score is made up of 50% avg error, 49% packet count, 1% divider
+        sim[c].score =
+            50.0 / sim[c].avg_tia_err_res + 49.0 / sim[c].replay_pkt_cnt_res +
+            (1.0/64.0) * sim[c].clk_divider;
 
         // pick the best clk_divider
         if (sim[c].score > score_max) {
@@ -134,14 +142,15 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
             clk_divider_optimal = sim[c].clk_divider;
         }
 
-        printf("    %u\t    %.4fus\t    %.4fus\t    %.4fus\t    %u\t    %u\t    %.0f\n",
-               sim[c].clk_divider, sim[c].min_tia_err * 1e6, sim[c].max_tia_err * 1e6, sim[c].avg_tia_err * 1e6,
-               sim[c].blackout_err, sim[c].replay_pkt_cnt, sim[c].score);
+        printf("    %u\t    %.4fus\t    %.4fus\t    %.4fus\t    %u\t    %u\t    %.4f\n",
+               sim[c].clk_divider, sim[c].min_tia_err * 1e6, sim[c].max_tia_err * 1e6,
+               sim[c].avg_tia_err * 1e6, sim[c].blackout_err, sim[c].replay_pkt_cnt, sim[c].score);
     }
     free(edge_ref);
 
     if (impossible_to_replay) {
-        printf("input signal has transitions that can't be replayed on the target microcontroller, exiting\n");
+        printf
+            ("input signal has transitions that can't be replayed on the target microcontroller, exiting\n");
         edgep = list_head(input_edges);
         while (edgep != NULL) {
             edged = edgep;
@@ -150,11 +159,11 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
         }
         return EXIT_FAILURE;
     }
-
     // generate replay stream with the best divider
     if (clk_divider_forced) {
         hdr->clk_divider = clk_divider_forced;
-        printf("  optimal divider: %u, generating using forced divider: %u\n", clk_divider_optimal, clk_divider_forced);
+        printf("  optimal divider: %u, generating using forced divider: %u\n", clk_divider_optimal,
+               clk_divider_forced);
     } else {
         hdr->clk_divider = clk_divider_optimal;
         printf("  optimal divider: %u\n", clk_divider_optimal);
@@ -164,7 +173,7 @@ int8_t parse_pulseview(input_sig_t * s, replay_header_t * hdr, list_t * replay_l
     hdr->block_size = sizeof(replay_packet_8ch.sig);
     hdr->header_size = sizeof(replay_header_t);
 
-    generate_replay(hdr, replay_ll, ALLOC); // | VERBOSE);
+    generate_replay(hdr, replay_ll, ALLOC);     // | VERBOSE);
 
     // free input signal's linked list
     edgep = list_head(input_edges);
@@ -274,8 +283,10 @@ int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t 
             timer_ticks_replayed += timer_ticks_temp;
 
             if (flags & VERBOSE) {
-                printf(" e%u.p%u diff_next %fus, %uc, t_abs %f, sig %x, ticks %u/%u/%u/%u\n", edge_cnt, hdr->packet_count, edgep->t_diff_next * 1.0e6,
-                       edgep->c_diff_next, edgep->t_abs, edgep->sig, timer_ticks_remain, timer_ticks_temp, timer_ticks_replayed, timer_ticks_abs_edge);
+                printf(" e%u.p%u diff_next %fus, %uc, t_abs %f, sig %x, ticks %u/%u/%u/%u\n",
+                       edge_cnt, hdr->packet_count, edgep->t_diff_next * 1.0e6, edgep->c_diff_next,
+                       edgep->t_abs, edgep->sig, timer_ticks_remain, timer_ticks_temp,
+                       timer_ticks_replayed, timer_ticks_abs_edge);
             }
             hdr->packet_count++;
         }
