@@ -113,6 +113,9 @@ int main(int argc, char *argv[])
     struct stat st;
     uint8_t *sig_8ch;
     uint8_t *sig_replay;
+    uint16_t chunk;
+    uint16_t capture_chunks;
+    uint32_t capture_size_total = 0;
 
     replay_header_t replay_header;
     list_init(replay);
@@ -316,37 +319,49 @@ int main(int argc, char *argv[])
     // metadata file parsing has ended
 
     // parse captured signal file
-    snprintf(temp_file, MAXPATH, "%s/%s-1", temp_dir, s.sig_meta.capturefile);
-    if ((fdin = open(temp_file, O_RDONLY)) < 0) {
-        errExit("opening signal file");
+    //  count the number of chunks
+    capture_chunks = 1;
+    capture_size_total = 0;
+    snprintf(temp_file, MAXPATH, "%s/%s-%u", temp_dir, s.sig_meta.capturefile, capture_chunks);
+
+    while (access(temp_file, F_OK) == 0) {
+        capture_chunks++;
+        stat(temp_file, &st);
+        capture_size_total += st.st_size;
+        snprintf(temp_file, MAXPATH, "%s/%s-%u", temp_dir, s.sig_meta.capturefile, capture_chunks);
     }
 
-    if (s.sig_meta.capturefile) {
-        free((void *)s.sig_meta.capturefile);
-    }
-    // apply mask and shift to capture, send result to memory
-    stat(temp_file, &st);
+    capture_chunks--;
+    printf("    number of chunks: %u, total size: %u bytes\n", capture_chunks, capture_size_total);
+
+    //  apply mask and shift to capture, send result to memory
 
     switch (s.sig_meta.unitsize) {
     case 2:
-        //printf("file len is %lu\n", st.st_size);
-        sig_8ch = (uint8_t *) calloc(st.st_size / 2, sizeof(uint8_t));
+        sig_8ch = (uint8_t *) calloc(capture_size_total / 2, sizeof(uint8_t));
         rcnt = 0;
-        while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
-            for (c = 0; c < cnt / 2; c++) {
-                sig16 = *(uint16_t *) (buf + (c * 2));
-                if (lshift) {
-                    sig_8ch[rcnt] = (sig16 & mask) << lshift;
-                } else if (rshift) {
-                    sig_8ch[rcnt] = (sig16 & mask) >> rshift;
-                } else {
-                    sig_8ch[rcnt] = sig16 & mask;
-                }
-                //printf("%x ", sig_8ch[rcnt]);
-                rcnt++;
+        for (chunk = 1; chunk <= capture_chunks; chunk++) {
+            snprintf(temp_file, MAXPATH, "%s/%s-%u", temp_dir, s.sig_meta.capturefile, chunk);
+            if ((fdin = open(temp_file, O_RDONLY)) < 0) {
+                errExit("opening signal chunk");
             }
+            while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
+                for (c = 0; c < cnt / 2; c++) {
+                    sig16 = *(uint16_t *) (buf + (c * 2));
+                    if (lshift) {
+                        sig_8ch[rcnt] = (sig16 & mask) << lshift;
+                    } else if (rshift) {
+                        sig_8ch[rcnt] = (sig16 & mask) >> rshift;
+                    } else {
+                        sig_8ch[rcnt] = sig16 & mask;
+                    }
+                    rcnt++;
+                }
+            }
+            close(fdin);
         }
-        s.signal_len = st.st_size / 2;
+
+        s.signal_len = capture_size_total / 2;
         s.sig = sig_8ch;
         memset(&replay_header, 0, sizeof(replay_header_t));
         replay_header.clk_divider = clk_divider;
@@ -354,22 +369,28 @@ int main(int argc, char *argv[])
         free(sig_8ch);
         break;
     case 1:
-        sig_8ch = (uint8_t *) calloc(st.st_size, sizeof(uint8_t));
+        sig_8ch = (uint8_t *) calloc(capture_size_total, sizeof(uint8_t));
         rcnt = 0;
-        while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
-            for (c = 0; c < cnt; c++) {
-                if (lshift) {
-                    sig_8ch[rcnt] = (buf[c] & (mask & 0xff)) << lshift;
-                } else if (rshift) {
-                    sig_8ch[rcnt] = (buf[c] & (mask & 0xff)) >> rshift;
-                } else {
-                    sig_8ch[rcnt] = buf[c] & (mask & 0xff);
-                }
-                //printf("%c", sig_8ch[rcnt]);
-                rcnt++;
+        for (chunk = 1; chunk <= capture_chunks; chunk++) {
+            snprintf(temp_file, MAXPATH, "%s/%s-%u", temp_dir, s.sig_meta.capturefile, chunk);
+            if ((fdin = open(temp_file, O_RDONLY)) < 0) {
+                errExit("opening signal chunk");
             }
+            while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
+                for (c = 0; c < cnt; c++) {
+                    if (lshift) {
+                        sig_8ch[rcnt] = (buf[c] & (mask & 0xff)) << lshift;
+                    } else if (rshift) {
+                        sig_8ch[rcnt] = (buf[c] & (mask & 0xff)) >> rshift;
+                    } else {
+                        sig_8ch[rcnt] = buf[c] & (mask & 0xff);
+                    }
+                    rcnt++;
+                }
+            }
+            close(fdin);
         }
-        s.signal_len = st.st_size;
+        s.signal_len = capture_size_total;
         s.sig = sig_8ch;
         memset(&replay_header, 0, sizeof(replay_header_t));
         replay_header.clk_divider = clk_divider;
@@ -384,9 +405,12 @@ int main(int argc, char *argv[])
 
     //printf("%d counts\n", rcnt);
 
+    if (s.sig_meta.capturefile) {
+        free((void *)s.sig_meta.capturefile);
+    }
+
     save_replay(fdout, &replay_header, &replay);
 
-    close(fdin);
     close(fdout);
 
     recursive_unlink(temp_dir);
