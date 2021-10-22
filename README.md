@@ -67,9 +67,9 @@ see [./software/README](./software/README)
 
 ### Testing
 
-most subsystems are separately tested either via [unit](.testsuite/zmodem/zmodem_unit_test.sh) [tests](/testsuite/crc) or [library per-module firmware](https://github.com/rodan/reference_libs_msp430/tree/master/tests).
+most subsystems are separately tested either via [unit](./testsuite/zmodem/zmodem_unit_test.sh) [tests](./testsuite/crc) or [library per-module firmware](https://github.com/rodan/reference_libs_msp430/tree/master/tests).
 
-the code itself is static-scanned by [llvm's scan-build](https://clang-analyzer.llvm.org/), [cppcheck](http://cppcheck.net/) and [coverity](https://scan.coverity.com/).
+the code itself is static-scanned by [llvm's scan-build](https://clang-analyzer.llvm.org/), [cppcheck](http://cppcheck.net/) and [coverity](https://scan.coverity.com/projects/rodan-sigdup?tab=overview).
 
 
 
