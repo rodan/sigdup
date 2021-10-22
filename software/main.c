@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
     }
 
     s.sampling_interval = (1.0 / (double)freq) / (double)freq_multiplier;
-    printf("  input file contains %d channels sampled at %s, sampling interval of %f µs, mask is %x\n",
+    printf("  input file contains %d channels sampled at %s, sampling interval of %f µs, mask is 0x%x\n",
            s.sig_meta.total_probes, s.sig_meta.samplerate, s.sampling_interval * 1.0E6, mask);
 
     free((void *)s.sig_meta.samplerate);

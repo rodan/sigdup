@@ -7,7 +7,7 @@
 
 ## sigdup
 
-This project converts logic signals captured via [sigrok](https://www.sigrok.org/) or [pulseview](https://www.sigrok.org/wiki/PulseView) (.sr files), allows the user to select the channels of interest and finally reproduces the signals on the P3.0-P3.7 pins of the MSP-EXP430FR5994 development board. currently signals slower than 35kHz are supported.
+This project converts logic signals captured via [sigrok](https://www.sigrok.org/) or [pulseview](https://www.sigrok.org/wiki/PulseView) (.sr files), allows the user to select the channels of interest and finally reproduces the signals on the P3.0-P3.7 pins of a [MSP-EXP430FR5994 development board](https://www.ti.com/tool/MSP-EXP430FR5994). currently signals slower than 35kHz are supported.
 
 ```
  source:       https://github.com/rodan/sigdup
@@ -36,7 +36,7 @@ the source of the microcontroller firmware is located in the **./firmware** dire
 
 this firmware is fully interrupt-driven to ensure the (otherwise sleeping) uC is always ready to generate precise output on P3.x.
 
-it takes about 12us to wake up from the timer interrupt, get the signal packet from FRAM, set P3 and prepare the timer for the next transition. so this project is great for clocks up to 35kHz, a 57600 serial uart or any signal that does not have consecutive transitions faster then 12us.
+it takes about 12us to wake up from the timer interrupt, get the signal packet from FRAM, set P3 and prepare the timer for the next transition. so this project is great for clocks up to 35kHz, a 57600 serial uart or any signal that does not have consecutive transitions faster then 12us. if at least one such hight frequency artefact is found in the input signal then a non-zero count of 'blk' (blackout) errors is reported during simulation and generation of output using that particular divider is not allowed.
 
 ### Build requirements
 
@@ -64,4 +64,12 @@ more details in [./firmware/README](./firmware/README).
 ### Usage
 
 see [./software/README](./software/README)
+
+### Testing
+
+most subsystems are separately tested either via [unit](.testsuite/zmodem/zmodem_unit_test.sh) [tests](/testsuite/crc) or [library per-module firmware](https://github.com/rodan/reference_libs_msp430/tree/master/tests).
+
+the code itself is static-scanned by [llvm's scan-build](https://clang-analyzer.llvm.org/), [cppcheck](http://cppcheck.net/) and [coverity](https://scan.coverity.com/).
+
+
 
