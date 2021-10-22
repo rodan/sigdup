@@ -195,12 +195,18 @@ int main(int argc, char *argv[])
     initSwCrc32Table();
 
     if (opmode == OPMODE_ANALYZE) {
-        stat(infile, &st);
+        if (stat(infile, &st) < 0) {
+            errExit("reading input file");
+        }
 
         sig_replay = (uint8_t *) calloc(st.st_size, sizeof(uint8_t));
 
-        if (read(fdin, sig_replay, st.st_size) < 0) {
-            errExit("reading input file");
+        rcnt = 0;
+        while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
+            for (c = 0; c < cnt; c++) {
+                sig_replay[rcnt] = buf[c];
+                rcnt++;
+            }
         }
 
         analyze_replay(sig_replay);
@@ -309,13 +315,17 @@ int main(int argc, char *argv[])
 
     str_to_uint32((char *)s.sig_meta.samplerate, &freq, 0, strlen(s.sig_meta.samplerate), 0, -1);
 
+    if (freq == 0) {
+        fprintf(stderr, "the frequency value read from capture metadata is invalod, exiting\n");
+        exit(1);
+    }
+
     s.sampling_interval = (1.0 / (double)freq) / (double)freq_multiplier;
     printf("  input file contains %d channels sampled at %s, sampling interval of %f µs, mask is %x\n",
            s.sig_meta.total_probes, s.sig_meta.samplerate, s.sampling_interval * 1.0E6, mask);
 
-    if (s.sig_meta.samplerate) {
-        free((void *)s.sig_meta.samplerate);
-    }
+    free((void *)s.sig_meta.samplerate);
+
     // metadata file parsing has ended
 
     // parse captured signal file

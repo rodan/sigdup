@@ -247,7 +247,7 @@ int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t 
     replay_packet_8ch_t *rp;
     replay_ll_t *re;
 
-    rsampling_int = 1.0 / (SMCLK / hdr->clk_divider);
+    rsampling_int = 1.0 / ((double) SMCLK / (double) hdr->clk_divider);
 
     if (flags & VERBOSE) {
         printf("  replay: sampling interval is %f µs\n", rsampling_int * 1.0E6);
