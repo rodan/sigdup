@@ -7,7 +7,7 @@
 
 ## sigdup
 
-This project converts logic signals captured via [sigrok][https://www.sigrok.org/] or [pulseview][https://www.sigrok.org/wiki/PulseView] (.sr files), allows the user to select the channels of interest and finally reproduces the signals on the P3.0-P3.7 pins of the MSP-EXP430FR5994 development board. currently signals slower than 35kHz are supported.
+This project converts logic signals captured via [sigrok](https://www.sigrok.org/) or [pulseview](https://www.sigrok.org/wiki/PulseView) (.sr files), allows the user to select the channels of interest and finally reproduces the signals on the P3.0-P3.7 pins of the MSP-EXP430FR5994 development board. currently signals slower than 35kHz are supported.
 
 ```
  source:       https://github.com/rodan/sigdup
@@ -51,7 +51,7 @@ make
 the .sr file parsing algorithm was written from scratch, so libsigrok is not currently needed.
 
 
-as for the firmware, you will need TI's excelent [GCC toolchain][https://www.ti.com/tool/MSP430-GCC-OPENSOURCE] or Code Composer Studio for linux and my [reference libraries for msp430 micros][https://github.com/rodan/reference_libs_msp430] cloned in /opt/.
+as for the firmware, you will need TI's excelent [GCC toolchain](https://www.ti.com/tool/MSP430-GCC-OPENSOURCE) or Code Composer Studio for linux and my [reference libraries for msp430 micros](https://github.com/rodan/reference_libs_msp430) cloned in /opt/.
 
 ```
 cd ./firmware
@@ -59,9 +59,9 @@ make
 make install
 ```
 
-more details in [./firmware/README][./firmware/README].
+more details in [./firmware/README](./firmware/README).
 
 ### Usage
 
-see [./software/README][./software/README]
+see [./software/README](./software/README)
 
