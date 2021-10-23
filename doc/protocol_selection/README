@@ -1,0 +1,101 @@
+ymodem - 12.76s, 401 packets, 3byte prefix/packet, 2bytes crc/packet, no padding at the end of file, file descriptor packet present
+xmodem - 12.74s, 399 packets, 3byte prefix/packet, 1byte crc/packet, garbage at the end of file
+zmodem - 9s, 5 packets, ?, no padding at the end of file, file descriptor present, handshake present
+
+file size: 50932 bytes
+
+--- direct testing ---------
+mkfifo /tmp/pipe
+cd /tmp
+sz /etc/resolv.conf < /tmp/pipe | rz --overwrite > /tmp/pipe
+----------------------------
+
+
+--- protocol analysis ------
+sigrok-cli -i zmodem.sr -P uart:baudrate=57600:tx=0:rx=1 -A uart=tx-data,uart=rx-data | sed 's|uart-1:||' | head -n200 |  xargs
+sigrok-cli -i zmodem.sr -P uart:baudrate=57600:tx=0:rx=1 -B uart=rxtx | xxd
+sigrok-cli -i zmodem.sr -P uart:baudrate=57600:tx=0:rx=1 -B uart=tx > tx_data.bin
+----------------------------
+
+
+--- proxy-testing ----------
+strace --absolute-timestamps=format:time,precision:ms -f -ewrite=7,8,9,10 -etrace=write socat pty,rawer pty,rawer
+ptty=$(ls -al /proc/`pidof socat`/fd/* | grep pts | grep -vE '/fd/[0-2] ->' | awk 'NR==1{ print $11 }'); rm -f sample_small.bin; ./rz --binary --zmodem < ${ptty} > ${ptty}
+ptty=$(ls -al /proc/`pidof socat`/fd/* | grep pts | grep -vE '/fd/[0-2] ->' | awk 'NR==2{ print $11 }'); sz --binary --zmodem ~/sample_small.bin < ${ptty} > ${ptty}
+----------------------------
+
+zmodem between 2 minicom terminals:
+
+rcv:
+ | 00000  2a 2a 18 42 30 31 30 30  30 30 30 30 32 33 62 65  **.B0100000023be |
+ | 00010  35 30 0d 8a 11                                    50...            |
+
+    2a 2a 18 42 - ZPAD ZPAD ZDLE ZHEX
+    ascii 01 - header type ZRINIT
+    ascii 0000 - ZF1 = ZF2 = ZF3 = 0
+    ascii 23 - ZF0 = CANFC32 | CANFDX | CANOVIO
+    62 65 35 30 - crc
+    0d 8a - "make it printable on remote machine" zshhdr()
+    11 - "Uncork the remote in case a fake XOFF has stopped data flow" zshhdr()
+
+snd:
+ | 00000  72 7a 0d 2a 2a 18 42 30  30 30 30 30 30 30 30 30  rz.**.B000000000 |
+ | 00010  30 30 30 30 30 0d 8a 11                           00000...         |
+
+
+rcv:
+ | 00000  2a 2a 18 42 30 31 30 30  30 30 30 30 32 33 62 65  **.B0100000023be |
+ | 00010  35 30 0d 8a 11                                    50...            |
+
+snd:
+ | 00000  2a 18 43 04 00 00 00 01  4b 61 a5 44 73 61 6d 70  *.C.....Ka.Dsamp |
+ | 00010  6c 65 5f 73 6d 61 6c 6c  2e 62 69 6e 00 32 30 34  le_small.bin.204 |
+ | 00020  38 20 31 33 37 32 37 33  36 36 32 30 35 20 31 30  8 13727366205 10 |
+ | 00030  30 36 34 34 20 30 20 31  20 32 30 34 38 00 18 6b  0644 0 1 2048..k |
+ | 00040  f5 56 21 b4 11                                    .V!..            |
+
+ size 2048
+rcv:
+ | 00000  2a 2a 18 42 30 39 30 30  30 30 30 30 30 30 61 38  **.B0900000000a8 |
+ | 00010  37 63 0d 8a 11                                    7c...            |
+
+snd:
+ | 00000  2a 18 43 0a 00 00 00 00  bc ef 92 8c 67 45 8b 6b  *.C.........gE.k |
+ | 00010  68 45 8b 6b 69 45 8b 6b  6a 45 8b 6b 6b 45 8b 6b  hE.kiE.kjE.kkE.k |
+ | 00020  6c 45 8b 6b 6d 45 8b 6b  6e 45 8b 6b 6f 45 8b 6b  lE.kmE.knE.koE.k |
+ | 00030  70 45 8b 6b 71 45 8b 6b  72 45 8b 6b 73 45 8b 6b  pE.kqE.krE.ksE.k |
+ | 00040  74 45 8b 6b 75 45 8b 6b  76 45 8b 6b 77 45 8b 6b  tE.kuE.kvE.kwE.k |
+ | 00050  78 45 8b 6b 79 45 8b 6b  7a 45 8b 6b 7b 45 8b 6b  xE.kyE.kzE.k{E.k |
+ | 00060  7c 45 8b 6b 7d 45 8b 6b  7e 45 8b 6b 7f 45 8b 6b  |E.k}E.k~E.k.E.k |
+ | 00070  80 45 8b 6b 81 45 8b 6b  82 45 8b 6b 83 45 8b 6b  .E.k.E.k.E.k.E.k |
+ | 00080  84 45 8b 6b 85 45 8b 6b  86 45 8b 6b 87 45 8b 6b  .E.k.E.k.E.k.E.k |
+ | 00090  88 45 8b 6b 89 45 8b 6b  8a 45 8b 6b 8b 45 8b 6b  .E.k.E.k.E.k.E.k |
+ | 000a0  8c 45 8b 6b 8d 45 8b 6b  8e 45 8b 6b 8f 45 8b 6b  .E.k.E.k.E.k.E.k |
+ | 000b0  18 d0 45 8b 6b 18 d1 45  8b 6b 92 45 8b 6b 18 d3  ..E.k..E.k.E.k.. |
+ | 000c0  45 8b 6b 94 45 8b 6b 95  45 8b 6b 96 45 8b 6b 97  E.k.E.k.E.k.E.k. |
+ | 000d0  45 8b 6b 98 45 8b 6b 99  45 8b 6b 9a 45 8b 6b 9b  E.k.E.k.E.k.E.k. |
+[..]
+ | 007e0  57 47 8b 6b 58 47 8b 6b  59 47 8b 6b 5a 47 8b 6b  WG.kXG.kYG.kZG.k |
+ | 007f0  5b 47 8b 6b 5c 47 8b 6b  5d 47 8b 6b 5e 47 8b 6b  [G.k\G.k]G.k^G.k |
+ | 00800  5f 47 8b 6b 60 47 8b 6b  61 47 8b 6b 62 47 8b 6b  _G.k`G.kaG.kbG.k |
+ | 00810  63 47 8b 6b 64 47 8b 6b  65 47 8b 6b 66 47 8b 6b  cG.kdG.keG.kfG.k |
+ | 00820  18 68 c6 b1 98 41 2a 18  43 0b 00 08 00 00 b4 97  .h...A*.C....... |
+ | 00830  e1 bf                                             ..               |
+
+rcv:
+ | 00000  2a 2a 18 42 30 31 30 30  30 30 30 30 32 33 62 65  **.B0100000023be |
+ | 00010  35 30 0d 8a 11                                    50...            |
+
+snd:
+ | 00000  2a 2a 18 42 30 38 30 30  30 30 30 30 30 30 30 32  **.B080000000002 |
+ | 00010  32 64 0d 8a                                       2d..             |
+
+rcv:
+ | 00000  2a 2a 18 42 30 38 30 30  30 30 30 30 30 30 30 32  **.B080000000002 |
+ | 00010  32 64 0d 8a                                       2d..             |
+
+snd:
+ | 00000  4f 4f                                             OO               |
+
+
+

@@ -1,0 +1,66 @@
+
+lsz -> sigdup
+
+rx 42 zrqinit 
+tx 42 zrinit    1 0 4 0 20
+rx 43 zfile
+tx 42 zrpos     9 0 0 0 0
+rx 43 zdata
+rx 43 zeof
+tx 42 zrinit    1 0 4 0 20
+rx 42 zfin
+tx 42 zfin      8 0 0 0 0
+
+
+lsz -> lrz
+
+rx 42 zrqinit
+tx 42 zrinit    1 0 0 0 23
+rx 43 zfile
+tx 42 zrpos     9 0 0 0 0
+rx 43 zdata
+rx 43 zeof
+tx 42 zrinit    1 0 0 0 23
+rx 42 zfin      8 0 0 0 0   02 2d
+tx 42 zfin      8 0 0 0 0   02 2d
+
+
+zoc -> lrz
+
+rx 42 zrqinit   0 0 0 0 0   0  0
+tx 42 zrinit    1 0 0 0 23  be 50
+rx 43 zfile
+tx 42 zrpos     9 0 0 0 0   a8 7c
+rx 43 zdata
+rx 43 zeof
+tx 42 zrinit    1 0 0 0 23  be 50
+rx 42 zfin      8 0 0 0 0   02 2d
+tx 42 zfin      8 0 0 0 0   02 2d
+
+teraterm -> lrz
+
+rx 42 zrqinit   0 0 0 0 0   0  0
+tx 42 zrinit    1 0 0 0 23  be 50
+rx 41 zfile
+tx 42 zrpos     9 0 0 0 0   a8 7c
+rx 41 zdata
+rx 42 zeof
+tx 42 zrinit    1 0 0 0 23  be 50
+rx 42 zfin      8 0 0 0 0   02 2d
+tx 42 zfin      8 0 0 0 0   02 2d
+
+zoc -> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

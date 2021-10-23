@@ -1,5 +1,5 @@
 
-PROJ = pg
+PROJ = sigdup
 INCLUDES  := -I ./ -I tlpi-lib/
 LOCAL_SRC := $(wildcard *.c)
 PROJ_SRC   = main.c

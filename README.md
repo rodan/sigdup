@@ -65,6 +65,7 @@ more details in [./firmware/README](./firmware/README).
 
 ### Usage
 
+see the manual [page](./doc/sigdup.1)
 see [./software/README](./software/README)
 
 ### Testing
