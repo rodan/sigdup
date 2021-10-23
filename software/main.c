@@ -204,9 +204,6 @@ int main(int argc, char *argv[])
 
         rcnt = 0;
         while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
-            if (cnt < 0) {
-                errExit("reading input file");
-            }
             for (c = 0; c < cnt; c++) {
                 sig_replay[rcnt] = buf[c];
                 rcnt++;
@@ -360,9 +357,6 @@ int main(int argc, char *argv[])
                 errExit("opening signal chunk");
             }
             while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
-                if (cnt < 0) {
-                    errExit("reading chunk");
-                }
                 for (c = 0; c < cnt / 2; c++) {
                     sig16 = *(uint16_t *) (buf + (c * 2));
                     if (lshift) {
