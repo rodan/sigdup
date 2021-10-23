@@ -28,6 +28,8 @@ CFLAGS	+= $(CFLAGS_DBG)
 LDFLAGS	+= $(LDFLAGS_DBG)
 endif
 
+COVERITY_SCAN_TOKEN := $(shell cat ../.secrets.COVERITY_SCAN_TOKEN)
+
 .PHONY: all
 .PHONY: clean
 .PHONY: tags
@@ -59,7 +61,18 @@ $(EXOBJECT): $(PROJ_SRC)
 allgen : ${GEN_EXE}
 
 clean : 
-	${RM} ${EXE} *.o ${PROJ} tags ${TLPI_LIB}
+	@${RM} ${EXE} *.o ${PROJ} tags ${TLPI_LIB}
+	@${RM} -rf cov-int
+
+coverity:
+	@cov-build --dir cov-int make
+	@tar czvf /tmp/$(PROJ).tgz cov-int
+	@curl --form token=$(COVERITY_SCAN_TOKEN) \
+	  --form email=2b4eda@subdimension.ro \
+	  --form file=@/tmp/$(PROJ).tgz \
+	  --form version="Version" \
+	  --form description="Description" \
+	  https://scan.coverity.com/builds?project=rodan%2Fsigdup
 
 tags: $(SRCS)
 	@echo "Generating tags .."

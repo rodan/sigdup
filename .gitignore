@@ -3,6 +3,7 @@ build/*
 qa/*
 tags
 resources.c
+.secret*
 .*.swp
 *.o
 *~
@@ -12,4 +13,6 @@ resources.c
 pg
 software/tlpi-lib/ename.c.inc
 software/tlpi-lib/libtlpi.a
+cov-int/
+testsuite/zmodem/rz
 external/*

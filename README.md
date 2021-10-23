@@ -26,7 +26,7 @@ a small linux program located in **./software** is used to convert the .sr file 
 
  * a header with packet counts and sizes but most importantly a timer clock divider which will be assigned to a dedicated timer on the target microcontroller (MSP430FR5994)
  * a stream of 3 byte packets that contain the P3 output in 1 byte and a CCR timer register for the next packet in the remaining two.
- * packets in this stream are only generated for a signal transition or a timer overflow.
+ * packets in this stream are only generated for a signal transition on any of the channels of interest or a timer counter overflow.
 
 a series of simulations are run on the input file with all supported clock dividers and the best divider wins based on a multi-criteria score system.
 
@@ -59,6 +59,8 @@ make
 make install
 ```
 
+the devboard has been modified by adding a 16MHz high frequency crystal and two load capacitors. if these components are missing from your board then make sure to disable the *USE_XT2* define from the Makefile or CCS.
+
 more details in [./firmware/README](./firmware/README).
 
 ### Usage
@@ -69,7 +71,7 @@ see [./software/README](./software/README)
 
 most subsystems are separately tested either via [unit](./testsuite/zmodem/zmodem_unit_test.sh) [tests](./testsuite/crc) or [library per-module firmware](https://github.com/rodan/reference_libs_msp430/tree/master/tests).
 
-the code itself is static-scanned by [llvm's scan-build](https://clang-analyzer.llvm.org/), [cppcheck](http://cppcheck.net/) and [coverity](https://scan.coverity.com/projects/rodan-sigdup?tab=overview).
+the code itself is static-scanned by [llvm's scan-build](https://clang-analyzer.llvm.org/), [cppcheck](http://cppcheck.net/) and [coverity](https://scan.coverity.com/projects/rodan-sigdup?tab=overview). Dynamic memory allocation in the PC applications is checked with [valgrind](https://valgrind.org/).
 
-
+the physical signals generated are analyzed with an 8 channel Saleae and a 16 channel DreamSourceLab DSLogicPlus device.
 

@@ -92,7 +92,8 @@ int main(int argc, char *argv[])
     int opt;
     char buf[BUF_SIZE];
     uint16_t sig16;
-    uint32_t cnt, c, rcnt = 0;
+    int32_t cnt;
+    uint32_t c, rcnt = 0;
     uint64_t i;
     uint8_t opmode = OPMODE_NORMAL;
     uint8_t clk_divider_opt;
@@ -203,6 +204,9 @@ int main(int argc, char *argv[])
 
         rcnt = 0;
         while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
+            if (cnt < 0) {
+                errExit("reading input file");
+            }
             for (c = 0; c < cnt; c++) {
                 sig_replay[rcnt] = buf[c];
                 rcnt++;
@@ -356,6 +360,9 @@ int main(int argc, char *argv[])
                 errExit("opening signal chunk");
             }
             while ((cnt = read(fdin, buf, BUF_SIZE)) > 0) {
+                if (cnt < 0) {
+                    errExit("reading chunk");
+                }
                 for (c = 0; c < cnt / 2; c++) {
                     sig16 = *(uint16_t *) (buf + (c * 2));
                     if (lshift) {
