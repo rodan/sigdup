@@ -1,0 +1,71 @@
+.\" Process this file with
+.\" groff -man -Tascii foo.1
+.\"
+.TH sigdup-firmware 1 "NOVEMBER 2021"
+.SH NAME
+sigdup (firmware) \- a command line interface enabled firmware for a MSP430FR5994 microcontroller that controls digital signal reproduction of up to 8 channels based on a pulseview capture. the capture is converted into a special replay file by 
+.B sigdup
+
+.SH SYNOPSIS
+.B [?] [sch] [read] [peek] [pa] [test] [prep] [go]
+
+.SH DESCRIPTION
+the CLI can be reached via the serial UART interface present on ports P2.0 and P2.1 - which are part of the serial-over-USB application UART on the EXP430FR5994 development board. the communication settings are baud 57600, 8n1.
+
+this interface takes in user commands and is also able to automatically recognize zmodem sequences. a file upload from minicom or ZOC is automatically detected and the contents of the uploaded file will be saved to the high FRAM area of the chip starting from address 0x10000 (HIGH_FRAM_ADDR).
+
+P1.0 and P1.1 are two status leds - red and green respectively. if the red led remains lit after board poweron then there was an initialization problem.
+
+the reproduced signal can be found on the P3.0 - P3.7 pins
+
+P5.5 is an active-low input that will immediately trigger the signal_replay() procedure. beware that this input is not debounced in any way, a clean falling edge is expected.
+
+please be advised that a 16MHz crystal and it's two load capacitors need to be present on the HFFXIN/HFXOUT pins.
+
+.SH OPTIONS
+.IP ?
+Display command menu
+.IP test
+Generate an 8 channel test signal in which each channel is twice slower then the previous one
+.IP go
+Start the signal_replay() procedure
+.IP sch
+Display current scheduling table
+.IP read
+Display uploaded file in xxd format
+.IP peek
+Display 256bytes starting from HIGH_FRAM_ADDR in xxd format without any processing
+.IP pa
+Parse uploaded file and display the replay packets in human readable format
+.IP prep
+Prepare the TA1 timer registers based on data present in the header of the uploaded replay file (happens automatically)
+
+.SH NOTE
+
+the xxd display format can be reverted to a file by capturing the serial communication from the uC and pipe-ing the important lines to xxd:
+
+.B xxd -r > file.bin < SIGDUP_OUTPUT
+
+.SH DIAGNOSTICS
+errors are displayed on the uart interface.
+
+testing the signal generation is possible by using the 
+.B test
+command and verifying the signals on the 8 pins of the P3 port.
+
+.SH BUGS
+please report any bugs via the github tracker located at <https://github.com/rodan/sigdup/issues>
+.SH "LICENSE"
+.B sigdup
+is covered by the GNU General Public License (GPLv3 or later).
+.SH AUTHOR
+Petre Rodan <2b4eda@subdimension.ro>
+.SH "SEE ALSO"
+.BR sigdup (1)
+,
+.BR xxd (1)
+,
+.BR pulseview (1)
+,
+.BR sigrok-cli (1)
+

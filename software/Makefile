@@ -64,7 +64,7 @@ clean :
 	@${RM} ${EXE} *.o ${PROJ} tags ${TLPI_LIB}
 	@${RM} -rf cov-int
 
-coverity:
+coverity: clean
 	@cov-build --dir cov-int make
 	@tar czvf /tmp/$(PROJ).tgz cov-int
 	@curl --form token=$(COVERITY_SCAN_TOKEN) \

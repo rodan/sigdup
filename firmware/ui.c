@@ -15,6 +15,8 @@
 #include "timer_a1.h"
 #include "pg.h"
 
+extern const uint32_t HIGH_FRAM_START;
+
 void display_menu(void)
 {
     char itoa_buf[CONV_BASE_10_BUF_SZ];
@@ -329,7 +331,10 @@ void parse_user_input(void)
         create_test_sig();
     } else if (strstr(input, "read")) {
         hdr = (fram_header *) (uintptr_t) HIGH_FRAM_ADDR;
-        print_buf_fram(hdr->file_start, hdr->file_sz);
-        //print_buf_fram(HIGH_FRAM_ADDR + 8, hdr->file_size);
+        if (hdr->file_start == HIGH_FRAM_START + sizeof(fram_header)) {
+            print_buf_fram(hdr->file_start, hdr->file_sz);
+        } else {
+            uart0_print("no file present\r\n");
+        }
     }
 }
