@@ -9,7 +9,6 @@ resources.c
 *~
 *.patch
 *.lck
-*.sr
 pg
 software/tlpi-lib/ename.c.inc
 software/tlpi-lib/libtlpi.a
