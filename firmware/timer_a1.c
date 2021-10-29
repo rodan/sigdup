@@ -171,7 +171,7 @@ void timer1_A1_ISR(void)
     uint16_t iv = TA1IV;
 
     if (iv == TAIV__TACCR1) {
-        sig0_on;
+        //sig0_on;
         P3OUT = next_sig;
         TA1CCTL1 = 0;
         TA1CCR1 = next_ccr;
@@ -185,7 +185,7 @@ void timer1_A1_ISR(void)
             TA1CCTL1 = 0;
             stream_pos = (uint8_t *) stream_start;
         }
-        sig0_off;
+        //sig0_off;
     } else if (iv == TA1IV_TA1IFG) {
         TA1CTL &= ~TAIFG;
     }

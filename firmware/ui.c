@@ -164,7 +164,7 @@ void parse_fram(void)
     }
     sig0_off;
 
-    uart0_print(" test    ");
+    uart0_print(" test ");
     uart0_print(_utoa(itoa_buf, test));
     uart0_print("\r\n");
 }

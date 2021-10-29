@@ -1,4 +1,10 @@
 
+// signal duplicator
+//
+//  source: https://github.com/rodan/sigdup
+//  author: Petre Rodan <2b4eda@subdimension.ro>
+// license: GNU GPLv3
+
 #include <inttypes.h>
 #include <unistd.h>
 #include <sys/stat.h>
