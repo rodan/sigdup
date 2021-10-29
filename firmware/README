@@ -1,35 +1,4 @@
 
- source:       https://github.com/rodan/sigdup 
- author:       Petre Rodan <2b4eda@subdimension.ro>
- license:      GNU GPLv3
- toolchain used: msp430-elf-gcc (Mitto Systems Limited - msp430-gcc 9.3.1.11) 9.3.1 linux
-
-* How does this project work?
-
-a UI is provided over the UCA0 uart (aka 'MSP430 Application UART' on the EXP430FR5994 board). connection parameters are 57600 8n1.
-
----------------------------
-sigdup build 542
-
-generic commands:
-
- ?    - show help
- sch  - show schedule
- read - read HIFRAM
- peek - peek HIFRAM
----------------------------
-
-?       - displays this menu with all the supported commands
-sch     - shows a 3 column table with schaduling timings - column 1 is the slot, column 2 is the trigger moment, column 3 is a bitflag (1 - set to trigger, 0 - action already triggered)
-peek    - outputs (in xxd format) the first 256 bytes starting from HIGH_FRAM_ADDR
-read    - outputs (in xxd format) the file that was received via zmodem
-
-one can initiate a zmodem upload to the microcontroller at any time. the file will be saved into high FRAM.
-pressing the P5.5 button initiates parsing the uploaded file in order to replay the contained signal on PORT1 and optionally PORT2.
-
-the files that are expected are based on pulseview captures that have been converted via the ../application contained in this project.
-
-
 * Compiling the project
 
 option 1:
