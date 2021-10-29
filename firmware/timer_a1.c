@@ -1,34 +1,26 @@
 
-//   timer a0 handling
-//   CCR1 is used for timer_a1_delay_noblk_ccr1()
-//   CCR2 is used for timer_a1_delay_noblk_ccr2()
+//   timer a1 handling
+//   CCR1 is used for signal generation
 //
 //   author:          Petre Rodan <2b4eda@subdimension.ro>
 //   available from:  https://github.com/rodan/
 //   license:         BSD
 
-//#include "config.h"
 #include "timer_a1.h"
 #include "pg.h"
 
-volatile uint8_t timer_a1_last_event;
-volatile uint16_t timer_a1_ovf;
+uint8_t timer_a1_last_event;
 
-volatile uint32_t stream_pos;   /// FRAM address for the next stream data pkt
-volatile uint32_t stream_start; /// FRAM address where the stream starts
-volatile uint32_t stream_end;   /// FRAM address where the stream ends
+uint32_t stream_start; /// FRAM address where the stream starts
+uint32_t stream_end;   /// FRAM address where the stream ends
+uint8_t *stream_pos;   /// pointer to the next stream data pkt
 
-volatile uint8_t next_sig = 0;
-volatile uint16_t next_ccr = 0;
-
-uint32_t timer_a1_get_stream_pos(void)
-{
-    return stream_pos;
-}
+uint8_t next_sig = 0;
+uint16_t next_ccr = 0;
 
 void timer_a1_set_stream_pos(const uint32_t address)
 {
-    stream_pos = address;
+    stream_pos = (uint8_t *) address;
 }
 
 uint32_t timer_a1_get_stream_start(void)
@@ -51,13 +43,11 @@ void timer_a1_set_stream_end(const uint32_t address)
     stream_end = address;
 }
 
-// clk_divider can be one of the CLK_DIV_X defines
 void timer_a1_init(const uint8_t clk_divider)
 {
 
     __disable_interrupt();
-    timer_a1_ovf = 0;
-    stream_pos = 0;
+    *stream_pos = 0;
     stream_end = 0;
     switch (clk_divider) {
         case CLK_DIV_1:
@@ -178,50 +168,25 @@ void timer_a1_rst_event(void)
 __attribute__ ((interrupt(TIMER1_A1_VECTOR)))
 void timer1_A1_ISR(void)
 {
-#ifdef LED_SYSTEM_STATES
-    sig2_on;
-#endif
-    replay_packet_8ch_t *pkt_8ch;
     uint16_t iv = TA1IV;
 
     if (iv == TAIV__TACCR1) {
-        //sig0_on;
+        sig0_on;
         P3OUT = next_sig;
         TA1CCTL1 = 0;
-        //next_ccr += 10000;
         TA1CCR1 = next_ccr;
-        //TA1CCR1 = 10000;
         TA1CCTL1 = CCIE;
 
-        stream_pos += 3;
-        if (stream_pos < stream_end) {
-            //next_sig = *((uint8_t *) stream_pos);
-            //next_ccr = *((uint16_t *) (stream_pos + 1));
-            pkt_8ch = (replay_packet_8ch_t *) stream_pos;
-            next_sig = pkt_8ch->sig;
-            next_ccr = pkt_8ch->ccr;
+        if (stream_pos < (uint8_t *) stream_end) {
+            next_sig = *(stream_pos++);
+            next_ccr = *(stream_pos++);
+            next_ccr += *(stream_pos++) << 8;
         } else {
             TA1CCTL1 = 0;
-            stream_pos = stream_start - 3;
+            stream_pos = (uint8_t *) stream_start;
         }
-        //sig0_off;
-
-        //timer_a1_last_event |= TIMER_A1_EVENT_CCR1;
-        //_BIC_SR_IRQ(LPM3_bits);
-    } else if (iv == TAIV__TACCR2) {
-        // timer used by timer_a1_delay_noblk_ccr2()
-        // disable interrupt
-        TA1CCTL2 &= ~CCIE;
-        TA1CCTL2 = 0;
-        timer_a1_last_event |= TIMER_A1_EVENT_CCR2;
-        _BIC_SR_IRQ(LPM3_bits);
+        sig0_off;
     } else if (iv == TA1IV_TA1IFG) {
         TA1CTL &= ~TAIFG;
-        timer_a1_ovf++;
-        //timer_a1_last_event |= TIMER_A1_EVENT_IFG;
-        _BIC_SR_IRQ(LPM3_bits);
     }
-#ifdef LED_SYSTEM_STATES
-    sig2_off;
-#endif
 }

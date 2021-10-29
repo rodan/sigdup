@@ -28,7 +28,7 @@
 
 /// it takes about 12us to prepare an edge and recover to normal operation
 /// any signal that needs faster transitions will get non-null blackout_err values
-#define   BLACKOUT_INT  12e-6
+#define   BLACKOUT_INT  9e-6
 
 typedef struct {
     uint16_t version;

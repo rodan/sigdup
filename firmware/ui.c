@@ -24,13 +24,13 @@ void display_menu(void)
     uart0_print(_utoa(&itoa_buf[0], BUILD));
     uart0_print("\r\n\r\ngeneric commands:\r\n\r\n");
     uart0_print(" \e[33;1m?\e[0m    - show help\r\n");
-    uart0_print(" \e[33;1msch\e[0m  - show schedule\r\n");
+    //uart0_print(" \e[33;1mpa\e[0m   - parse HIFRAM\r\n");
+    //uart0_print(" \e[33;1mprep\e[0m - prepare signal\r\n");
+    uart0_print(" \e[33;1mgo\e[0m   - replay signal\r\n");
+    uart0_print(" \e[33;1mtest\e[0m - generate test signal\r\n");
     uart0_print(" \e[33;1mread\e[0m - read HIFRAM\r\n");
     uart0_print(" \e[33;1mpeek\e[0m - peek HIFRAM\r\n");
-    uart0_print(" \e[33;1mpa\e[0m   - parse HIFRAM\r\n");
-    uart0_print(" \e[33;1mtest\e[0m - generate test signal\r\n");
-    uart0_print(" \e[33;1mprep\e[0m - prepare signal\r\n");
-    uart0_print(" \e[33;1mgo\e[0m   - replay signal\r\n");
+    uart0_print(" \e[33;1msch\e[0m  - show schedule\r\n");
 }
 
 void display_DONE(void)
@@ -122,16 +122,20 @@ void create_test_sig(void)
     prepare_signal();
 }
 
+//#define USE_STRUCT_POSITIONING
+//#define USE_POINTER
+
 void parse_fram(void)
 {
     char itoa_buf[CONV_BASE_10_BUF_SZ];
 
-    volatile uint32_t stream_pos;   /// FRAM address for the next stream data pkt
-    volatile uint32_t stream_start; /// FRAM address where the stream starts
-    volatile uint32_t stream_end;   /// FRAM address where the stream ends
+    uint32_t test;
+    uint32_t stream_pos;   /// FRAM address for the next stream data pkt
+    uint32_t stream_start; /// FRAM address where the stream starts
+    uint32_t stream_end;   /// FRAM address where the stream ends
 
-    volatile uint8_t next_sig = 0;
-    volatile uint16_t next_ccr = 0;
+    uint8_t next_sig = 0;
+    uint16_t next_ccr = 0;
 
     replay_packet_8ch_t *pkt_8ch;
 
@@ -139,22 +143,30 @@ void parse_fram(void)
     stream_end = timer_a1_get_stream_end();
     stream_pos = stream_start;
 
+    test = 0;
+
+    sig0_on;
     while (stream_pos < stream_end) {
+
         pkt_8ch = (replay_packet_8ch_t *) stream_pos;
         next_sig = pkt_8ch->sig;
         next_ccr = pkt_8ch->ccr;
 
-        //next_sig = *((uint8_t *) stream_pos);
-        //next_ccr = *((uint16_t *) (stream_pos + 1));
+        //uart0_print(" sig ");
+        //uart0_print(_utoh(itoa_buf, next_sig));
+        //uart0_print(" ccr ");
+        //uart0_print(_utoa(itoa_buf, next_ccr));
+        //uart0_print("\r\n");
 
-        uart0_print(" sig ");
-        uart0_print(_utoh(itoa_buf, next_sig));
-        uart0_print(" ccr ");
-        uart0_print(_utoa(itoa_buf, next_ccr));
-        uart0_print("\r\n");
+        test += next_sig + next_ccr;
 
         stream_pos += 3;
     }
+    sig0_off;
+
+    uart0_print(" test    ");
+    uart0_print(_utoa(itoa_buf, test));
+    uart0_print("\r\n");
 }
 
 void print_buf(uint8_t * data, const uint16_t size)
@@ -321,10 +333,10 @@ void parse_user_input(void)
         display_schedule();
     } else if (strstr(input, "peek")) {
         print_buf_fram(HIGH_FRAM_ADDR, 256);
-    } else if (strstr(input, "pa")) {
-        parse_fram();
-    } else if (strstr(input, "prep")) {
-        prepare_signal();
+//    } else if (strstr(input, "pa")) {
+//        parse_fram();
+//    } else if (strstr(input, "prep")) {
+//        prepare_signal();
     } else if (strstr(input, "go")) {
         replay_signal();
     } else if (strstr(input, "test")) {

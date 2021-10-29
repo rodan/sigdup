@@ -26,7 +26,7 @@ please be advised that a 16MHz crystal and it's two load capacitors need to be p
 .IP ?
 Display command menu
 .IP test
-Generate an 8 channel test signal in which each channel is twice slower then the previous one
+Generate an 8 channel test signal in which each channel is half the frequency of the previous one
 .IP go
 Start the signal_replay() procedure
 .IP sch
@@ -35,10 +35,6 @@ Display current scheduling table
 Display uploaded file in xxd format
 .IP peek
 Display 256bytes starting from HIGH_FRAM_ADDR in xxd format without any processing
-.IP pa
-Parse uploaded file and display the replay packets in human readable format
-.IP prep
-Prepare the TA1 timer registers based on data present in the header of the uploaded replay file (happens automatically)
 
 .SH NOTE
 

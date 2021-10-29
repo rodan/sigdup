@@ -128,24 +128,6 @@ void check_events(void)
     uint32_t msg = SYS_MSG_NULL;
     uint16_t ev;
 
-    //uint16_t lstream_pos = 260;
-    //uint16_t lstream_end = 300;
-
-#if 0
-    if (timer_a1_get_event()) {
-        //send_8ch();
-        TA1CCR1 = 10000;
-        lstream_pos += 3;
-
-        if (lstream_pos < lstream_end) {
-            TA1CCTL1 = CCIE;
-        }
-        //__nop();
-        sig0_off;
-        timer_a1_rst_event();
-    }
-#endif
-
     // uart RX
     if (uart0_get_event() & UART0_EV_RX) {
         msg |= SYS_MSG_UART0_RX;
@@ -160,16 +142,6 @@ void check_events(void)
             msg |= SYS_MSG_TIMERA0_CCR2;
         }
         timer_a0_rst_event();
-    }
-    // timer_a1
-    ev = timer_a1_get_event();
-    if (ev) {
-        if (ev & TIMER_A1_EVENT_CCR1) {
-            msg |= SYS_MSG_TIMERA1_CCR1;
-        } else if (ev & TIMER_A1_EVENT_CCR2) {
-            msg |= SYS_MSG_TIMERA1_CCR2;
-        }
-        timer_a1_rst_event();
     }
     // timer_a2
     ev = timer_a2_get_event();
@@ -237,7 +209,7 @@ void prepare_signal(void)
     valid_signal = 1;
 
     timer_a1_init(replay_hdr->clk_divider);
-    timer_a1_set_stream_pos(hdr->file_start + replay_hdr->header_size - 3);
+    timer_a1_set_stream_pos(hdr->file_start + replay_hdr->header_size);
     timer_a1_set_stream_start(hdr->file_start + replay_hdr->header_size);
     timer_a1_set_stream_end(hdr->file_start + hdr->file_sz);
 }
