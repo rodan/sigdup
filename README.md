@@ -7,7 +7,7 @@
 
 ## sigdup
 
-This project converts logic signals captured via [sigrok](https://www.sigrok.org/) or [pulseview](https://www.sigrok.org/wiki/PulseView) (.sr files), allows the user to select the channels of interest and finally reproduces the signals on the P3.0-P3.7 pins of an [MSP-EXP430FR5994 development board](https://www.ti.com/tool/MSP-EXP430FR5994). currently signals slower than 55kHz are supported.
+This project converts logic signals captured via [sigrok](https://www.sigrok.org/) or [pulseview](https://www.sigrok.org/wiki/PulseView) (.sr files), allows the user to select the channels of interest and finally reproduces the signals on the P3.0-P3.7 pins of an [MSP-EXP430FR5994 development board](https://www.ti.com/tool/MSP-EXP430FR5994). currently signals slower than 50kHz are supported.
 
 ```
  source:       https://github.com/rodan/sigdup

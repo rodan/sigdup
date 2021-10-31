@@ -184,6 +184,10 @@ void timer1_A1_ISR(void)
         } else {
             TA1CCTL1 = 0;
             stream_pos = (uint8_t *) stream_start;
+            // re-enable interrupts
+            TA2CCTL1 = CCIE;
+            P5IFG &= ~BIT5;
+            P5IE |= BIT5;
         }
         //sig0_off;
     } else if (iv == TA1IV_TA1IFG) {

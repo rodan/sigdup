@@ -102,9 +102,6 @@ void timer_a0_sleep_nonblock(const uint16_t ms)
 __attribute__ ((interrupt(TIMER0_A1_VECTOR)))
 void timer0_A1_ISR(void)
 {
-#ifdef LED_SYSTEM_STATES
-    sig2_on;
-#endif
     uint16_t iv = TA0IV;
     if (iv == TAIV__TACCR1) {
         // timer used by timer_a0_delay_noblk_ccr1()
@@ -137,7 +134,4 @@ void timer0_A1_ISR(void)
         //timer_a0_last_event |= TIMER_A0_EVENT_IFG;
         _BIC_SR_IRQ(LPM3_bits);
     }
-#ifdef LED_SYSTEM_STATES
-    sig2_off;
-#endif
 }

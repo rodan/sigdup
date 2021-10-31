@@ -7,7 +7,7 @@
 #define USE_XT1
 // the devboard has a 16M crystal installed
 #ifdef SMCLK_FREQ_16M
-#define USE_XT2
+//#define USE_XT2
 #endif
 
 #define USE_UART0

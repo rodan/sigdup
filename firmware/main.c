@@ -227,6 +227,13 @@ void replay_signal(void)
     TA1CTL |= TACLR;
     TA1CCR1 = 1;
     TA1CCTL1 = CCIE;
+
+    // disable scheduling timer, otherwise we get 
+    // 6us jitter in the replay signal every 10ms
+    TA2CCTL1 = 0;
+
+    // disable button interrupt
+    P5IE &= ~BIT5;
 }
 
 int main(void)

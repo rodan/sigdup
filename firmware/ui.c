@@ -33,26 +33,6 @@ void display_menu(void)
     uart0_print(" \e[33;1msch\e[0m  - show schedule\r\n");
 }
 
-void display_DONE(void)
-{
-    uart0_print("done\r\n");
-}
-
-void display_SEP(void)
-{
-    uart0_print("---------------\r\n");
-}
-
-void display_PASSED(void)
-{
-    uart0_print("\e[32;1mpassed\e[0m\r\n");
-}
-
-void display_FAILED(void)
-{
-    uart0_print("\e[31;1mfailed\e[0m\r\n");
-}
-
 void display_schedule(void)
 {
     uint8_t c;
@@ -108,7 +88,7 @@ void create_test_sig(void)
     
     for (c = 0; c < 1000; c++) {
         pkt.sig = c;
-        pkt.ccr += 184;
+        pkt.ccr += 160; // 50kHz
         fram_write((uint8_t *)&pkt, sizeof(pkt));
     }
 
@@ -164,9 +144,7 @@ void parse_fram(void)
     }
     sig0_off;
 
-    uart0_print(" test ");
     uart0_print(_utoa(itoa_buf, test));
-    uart0_print("\r\n");
 }
 
 void print_buf(uint8_t * data, const uint16_t size)

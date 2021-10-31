@@ -32,7 +32,7 @@ for each clock divider time interval errors are calculated and the replay with t
 .BR -d [DEC]
 option and select a given divider if no blackout errors are found for it.
 
-if the signal contains consecutive transitions shorter then 9us, replay generation is not possible. see 
+if the signal contains consecutive transitions shorter then 10us, replay generation is not possible. see 
 .B LIMITATIONS 
 below.
 
@@ -133,10 +133,10 @@ for further details.
 a replay signal can not be generated in the following corner cases:
 
 .IP "\(bu" 4
-two consecutive packets need to be closer than 9us.
+two consecutive packets need to be closer than 10us.
 while packets are only generated for signal transitions and just before a counter overflow, it takes about 
 .B BLACKOUT_INT
-seconds for the microcontroller to wake up for the timer interrupt, set P3OUT, read the next timer CCR register from FRAM, set the timer and return from interrupt. currently this means it cannot replay a faster then 55kHz clock, an uart over 57600bauds or sub 9us transitions across channels.
+seconds for the microcontroller to wake up for the timer interrupt, set P3OUT, read the next timer CCR register from FRAM, set the timer and return from interrupt. currently this means it cannot replay a faster then 50kHz clock, an uart over 57600bauds or sub 10us transitions across channels.
 .IP "\(bu" 4
 high FRAM storage is about 212 kbytes, which imposes a length restriction to zmodem uploads.
 .IP "\(bu" 4

@@ -154,8 +154,10 @@ $(OBJ_DIR)/$(PROJ).dep: $(SRC)
 
 tags: $(PROJ_SRC) $(DRIVERLIB_SRC) $(GLUELIB_SRC) $(GLUELIB_HAL_SRC) $(LOCAL_SRC) $(OBJ_DIR)/$(PROJ).dep
 	@echo "Generating tags .."
-	@echo $(deps)
-	@exuberant-ctags --recurse=yes ./ $(DRIVERLIB) $(GLUELIB) $(LDDIR).h $(shell cat $(OBJ_DIR)/$(PROJ).hdep)
+	@$(shell sed 's| |\n|g' $(OBJ_DIR)/$(PROJ).hdep | while read file; do dirname "$file; done >> $(OBJ_DIR)/$(PROJ).fdep)
+	@$(shell sed 's| |\n|g' $(OBJ_DIR)/$(PROJ).hdep | while read file; do dirname $file; done | sort -u | grep -v 'glue' | xargs >> $(OBJ_DIR)/$(PROJ).ddep)
+	@exuberant-ctags --recurse=yes ./ $(LDDIR).h $(shell cat $(OBJ_DIR)/$(PROJ).hdep)
+	#@exuberant-ctags --recurse=yes ./ $(DRIVERLIB) $(GLUELIB) $(LDDIR).h $(shell cat $(OBJ_DIR)/$(PROJ).hdep)
 
 new_timestamps:
 	@$(BASH) $(REFLIB_ROOT)/tools/update_rtca_now.sh

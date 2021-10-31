@@ -133,9 +133,6 @@ void timer2_A1_ISR(void)
 {
     uint16_t iv = TA2IV;
 
-#ifdef LED_SYSTEM_STATES
-    sig2_on;
-#endif
     if (iv == TAIV__TACCR1) {
         // timer used by timer_a1_delay_noblk_ccr1()
         // disable interrupt
@@ -153,7 +150,4 @@ void timer2_A1_ISR(void)
         // overflow
         TA2CTL &= ~TAIFG;
     }
-#ifdef LED_SYSTEM_STATES
-    sig2_off;
-#endif
 }
