@@ -78,11 +78,11 @@ DEBUG := $(shell grep "^\#define CONFIG_DEBUG" config.h)
 MACROS := -DDEVICE=$(DEVICE) -DFAMILY=$(FAMILY) $(shell $(REFLIB_ROOT)/tools/extract_macros.sh config.h)
 CFLAGS += $(MACROS)
 ifeq ($(DEBUG),)
-TARGET	:= RELEASE
+CTARGET	:= RELEASE
 CFLAGS	+= $(CFLAGS_REL)
 LDFLAGS	+= $(LDFLAGS_REL)
 else
-TARGET	:= DEBUG
+CTARGET	:= DEBUG
 CFLAGS	+= $(CFLAGS_DBG)
 LDFLAGS	+= $(LDFLAGS_DBG)
 endif
@@ -117,7 +117,7 @@ $(OBJ_DIR)/%.o: %.c
 	@$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
 $(EXOUTPUT): $(DRIVERLIB_OBJECTS) $(GLUELIB_OBJECTS) $(LOCAL_OBJECTS) $(EXOBJECT)
-	@echo -e "\n>> Building $@ as target $(TARGET)"
+	@echo -e "\n>> Building $@ as target $(CTARGET)"
 	@$(CC) $(LDFLAGS) $(DRIVERLIB_OBJECTS) $(GLUELIB_OBJECTS) $(LOCAL_OBJECTS) -o $@
 
 mkdir_od:
