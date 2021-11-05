@@ -11,26 +11,11 @@
 #endif
 
 #define USE_UART0
-//#define USE_UART3
-
-//#define BAUD_9600
-//#define BAUD_19200
-//#define BAUD_38400
-#define BAUD_57600
-
+#define UART0_BAUD 57600
 #define UART0_RXBUF_SZ 128
 #define UART0_RX_USES_RINGBUF
-
 #define UART0_TXBUF_SZ 32
 #define UART0_TX_USES_IRQ
-
-#ifdef USE_UART3
-#define UART3_RXBUF_SZ 8
-//#define UART3_RX_USES_RINGBUF
-
-#define UART3_TXBUF_SZ 64
-#define UART3_TX_USES_IRQ
-#endif
 
 #define FILE_MIN_SZ 0x0b        // at least header size
 #define FILE_MAX_SZ 0x33FF0

@@ -64,16 +64,6 @@ clean :
 	@${RM} ${EXE} *.o ${PROJ} tags ${TLPI_LIB}
 	@${RM} -rf cov-int
 
-coverity: clean
-	@cov-build --dir cov-int make
-	@tar czvf /tmp/$(PROJ).tgz cov-int
-	@curl --form token=$(COVERITY_SCAN_TOKEN) \
-	  --form email=2b4eda@subdimension.ro \
-	  --form file=@/tmp/$(PROJ).tgz \
-	  --form version="Version" \
-	  --form description="Description" \
-	  https://scan.coverity.com/builds?project=rodan%2Fsigdup
-
 tags: $(SRCS)
 	@echo "Generating tags .."
 	@exuberant-ctags -R
@@ -85,6 +75,16 @@ cppcheck: $(PROJ)
 
 scan-build: clean
 	@scan-build make
+
+coverity: clean
+	@cov-build --dir cov-int make
+	@tar czvf /tmp/$(PROJ).tgz cov-int
+	@curl --form token=$(COVERITY_SCAN_TOKEN) \
+	  --form email=2b4eda@subdimension.ro \
+	  --form file=@/tmp/$(PROJ).tgz \
+	  --form version="$(shell ./tools/getver.sh -i ./version.h -t MAJ.MINbBUILD)" \
+	  --form description="Description" \
+	  https://scan.coverity.com/builds?project=rodan%2Fsigdup
 
 force_look :
 	true
