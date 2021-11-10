@@ -38,7 +38,7 @@
 									<listOptionValue builtIn="false" value="${CCS_BASE_ROOT}/msp430/include_gcc"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${REFLIB_DIR}/driverlib/MSP430FR5xx_6xx"/>
-									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue"/>
+									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue/generic"/>
 									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue/MSP430FR5xx_6xx"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_INCLUDE_PATH}"/>
 								</option>
@@ -58,11 +58,8 @@
 									<listOptionValue builtIn="false" value="BAUD_57600"/>
 									<listOptionValue builtIn="false" value="UART0_RXBUF_SZ=128"/>
 									<listOptionValue builtIn="false" value="UART0_RX_USES_RINGBUF"/>
-									<listOptionValue builtIn="false" value="UART0_TXBUF_SZ=32"/>
-									<listOptionValue builtIn="false" value="UART0_TX_USES_IRQ"/>
-									<listOptionValue builtIn="false" value="UART3_RXBUF_SZ=8"/>
-									<listOptionValue builtIn="false" value="UART3_TXBUF_SZ=64"/>
-									<listOptionValue builtIn="false" value="UART3_TX_USES_IRQ"/>
+                                    <listOptionValue builtIn="false" value="UART0_TXBUF_SZ=32"/>
+                                    <listOptionValue builtIn="false" value="UART0_TX_USES_IRQ"/>
 									<listOptionValue builtIn="false" value="FILE_MIN_SZ=0x3f"/>
 									<listOptionValue builtIn="false" value="FILE_MAX_SZ=0x33FF0"/>
 									<listOptionValue builtIn="false" value="HW_CRC16"/>
@@ -108,7 +105,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430FR57xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/guides|reference_libs_msp430/hardware|reference_libs_msp430/tests|reference_libs_msp430/old_drivers|lnk_msp430fr5994.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430FR57xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/hardware|reference_libs_msp430/tests|reference_libs_msp430/old_drivers|lnk_msp430fr5994.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="reference_libs_msp430/tests/clock_jitter/build"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -158,9 +156,6 @@
 									<listOptionValue builtIn="false" value="UART0_RX_USES_RINGBUF"/>
 									<listOptionValue builtIn="false" value="UART0_TXBUF_SZ=32"/>
 									<listOptionValue builtIn="false" value="UART0_TX_USES_IRQ"/>
-									<listOptionValue builtIn="false" value="UART3_RXBUF_SZ=8"/>
-									<listOptionValue builtIn="false" value="UART3_TXBUF_SZ=64"/>
-									<listOptionValue builtIn="false" value="UART3_TX_USES_IRQ"/>
 									<listOptionValue builtIn="false" value="FILE_MIN_SZ=0x3f"/>
 									<listOptionValue builtIn="false" value="FILE_MAX_SZ=0x33FF0"/>
 									<listOptionValue builtIn="false" value="HW_CRC16"/>
@@ -187,7 +182,7 @@
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
 									<listOptionValue builtIn="false" value="${REFLIB_DIR}/driverlib/MSP430FR5xx_6xx"/>
-									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue"/>
+									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue/generic"/>
 									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue/MSP430FR5xx_6xx"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.MSP430_20.2.compilerID.ADVICE__POWER.864689455" name="Enable checking of ULP power rules (--advice:power)" superClass="com.ti.ccstudio.buildDefinitions.MSP430_20.2.compilerID.ADVICE__POWER" value="&quot;all&quot;" valueType="string"/>
@@ -235,7 +230,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="reference_libs_msp430/driverlib/MSP430FR57xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/tests|reference_libs_msp430/old_drivers|reference_libs_msp430/hardware|reference_libs_msp430/guides|msp430fr5994.ld" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="reference_libs_msp430/driverlib/MSP430FR57xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/tests|reference_libs_msp430/old_drivers|reference_libs_msp430/hardware|msp430fr5994.ld" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="reference_libs_msp430/tests/clock_jitter/build"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -278,7 +274,7 @@
 									<listOptionValue builtIn="false" value="${CCS_BASE_ROOT}/msp430/include_gcc"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${REFLIB_DIR}/driverlib/MSP430FR5xx_6xx"/>
-									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue"/>
+									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue/generic"/>
 									<listOptionValue builtIn="false" value="${REFLIB_DIR}/glue/MSP430FR5xx_6xx"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_INCLUDE_PATH}"/>
 								</option>
@@ -306,9 +302,6 @@
 									<listOptionValue builtIn="false" value="UART0_RX_USES_RINGBUF"/>
 									<listOptionValue builtIn="false" value="UART0_TXBUF_SZ=32"/>
 									<listOptionValue builtIn="false" value="UART0_TX_USES_IRQ"/>
-									<listOptionValue builtIn="false" value="UART3_RXBUF_SZ=8"/>
-									<listOptionValue builtIn="false" value="UART3_TXBUF_SZ=64"/>
-									<listOptionValue builtIn="false" value="UART3_TX_USES_IRQ"/>
 									<listOptionValue builtIn="false" value="FILE_MIN_SZ=0x3f"/>
 									<listOptionValue builtIn="false" value="FILE_MAX_SZ=0x33FF0"/>
 									<listOptionValue builtIn="false" value="HW_CRC16"/>
@@ -360,7 +353,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="reference_libs_msp430/tests|reference_libs_msp430/old_drivers|reference_libs_msp430/hardware|reference_libs_msp430/guides|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR57xx|lnk_msp430fr5994.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="reference_libs_msp430/tests|reference_libs_msp430/old_drivers|reference_libs_msp430/hardware|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR57xx|lnk_msp430fr5994.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="reference_libs_msp430/tests/clock_jitter/build"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

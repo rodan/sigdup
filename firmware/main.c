@@ -255,9 +255,6 @@ int main(void)
     uart0_init();
     uart0_set_rx_irq_handler(uart0_extra_irq_handler);
 
-    //uart3_port_init();
-    //uart3_init();
-
     // Disable the GPIO power-on default high-impedance mode to activate
     // previously configured port settings
     PM5CTL0 &= ~LOCKLPM5;
