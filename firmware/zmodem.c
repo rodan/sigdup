@@ -19,7 +19,6 @@ static int fdout;
 #else
 #include "proj.h"
 #include "uart0.h"
-#include "uart3.h"
 #include "uart0_extras.h"
 #include "fram_glue.h"
 #include "lib_convert.h"
