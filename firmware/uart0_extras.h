@@ -1,11 +1,15 @@
 #ifndef __UART0_EXTRAS_H__
 #define __UART0_EXTRAS_H__
 
+#define intrchar_tmout 500      // _2ms
+#define  UART_RET_WAKE 1
+#define UART_RET_SLEEP 2
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define intrchar_tmout 500      // _2ms
+
 
     typedef enum {
         RX_USER,

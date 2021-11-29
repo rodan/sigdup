@@ -242,7 +242,6 @@ int main(void)
     WDTCTL = WDTPW | WDTHOLD;
     main_init();
 
-    clock_port_init();
     clock_init();
 
     fram_init();
@@ -251,7 +250,7 @@ int main(void)
     timer_a1_init(CLK_DIV_64);  // main signal replication timer
     timer_a2_init();            // scheduler, systime()
 
-    uart0_port_init();
+    uart0_pin_init();
     uart0_init();
     uart0_set_rx_irq_handler(uart0_extra_irq_handler);
 

@@ -51,7 +51,7 @@ make
 the .sr file parsing algorithm was written from scratch, so libsigrok is not currently needed.
 
 
-as for the firmware, you will need TI's excelent [GCC toolchain](https://www.ti.com/tool/MSP430-GCC-OPENSOURCE) or Code Composer Studio for linux and my [reference libraries for msp430 micros](https://github.com/rodan/reference_libs_msp430) cloned in /opt/.
+as for the firmware, you will need TI's excelent [GCC toolchain](https://www.ti.com/tool/MSP430-GCC-OPENSOURCE) or Code Composer Studio for linux and my [reference libraries for msp430 micros](https://github.com/rodan/atlas430) cloned in /opt/.
 
 ```
 cd ./firmware
@@ -69,7 +69,7 @@ manual pages are provided for both the [application](./doc/sigdup.1) and the [fi
 
 ### Testing
 
-most subsystems are separately tested either via [unit](./testsuite/zmodem/zmodem_unit_test.sh) [tests](./testsuite/crc) or [library per-module firmware](https://github.com/rodan/reference_libs_msp430/tree/master/tests).
+most subsystems are separately tested either via [unit](./testsuite/zmodem/zmodem_unit_test.sh) [tests](./testsuite/crc) or [library per-module firmware](https://github.com/rodan/atlas430/tree/master/tests).
 
 the code itself is static-scanned by [llvm's scan-build](https://clang-analyzer.llvm.org/), [cppcheck](http://cppcheck.net/) and [coverity](https://scan.coverity.com/projects/rodan-sigdup?tab=overview). Dynamic memory allocation in the PC applications is checked with [valgrind](https://valgrind.org/).
 
