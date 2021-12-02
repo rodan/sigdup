@@ -242,6 +242,7 @@ int main(void)
     WDTCTL = WDTPW | WDTHOLD;
     main_init();
 
+    clock_pin_init();
     clock_init();
 
     fram_init();
