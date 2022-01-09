@@ -10,7 +10,7 @@
 #define USE_XT2
 #endif
 
-#define USE_UART0
+#define UART_USES_UCA0
 #define UART0_BAUD 57600
 #define UART0_RXBUF_SZ 128
 #define UART0_RX_USES_RINGBUF
