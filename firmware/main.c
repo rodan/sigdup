@@ -14,19 +14,19 @@
 #include "proj.h"
 #include "driverlib.h"
 #include "glue.h"
-#include "uart0.h"
 #include "uart0_extras.h"
 #include "ui.h"
 #include "timer_a0.h"
 #include "timer_a1.h"
 #include "timer_a2.h"
-#include "uart0.h"
 #include "zmodem.h"
 #include "version.h"
 #include "fram_glue.h"
+#include "sig.h"
 
 volatile uint8_t port5_last_event;
 static uint8_t valid_signal = 0;
+uart_descriptor bc; // backchannel uart interface
 
 void main_init(void)
 {
@@ -100,7 +100,7 @@ static void button_56_irq(uint32_t msg)
 
 static void button_56_long_press_irq(uint32_t msg)
 {
-    uart0_print("PB56 long\r\n");
+    uart_print(&bc, "PB56 long\r\n");
 }
 
 
@@ -109,16 +109,17 @@ static void scheduler_irq(uint32_t msg)
     timer_a2_scheduler_handler();
 }
 
-static void uart0_rx_irq(uint32_t msg)
+static void uart_rx_irq(uint32_t msg)
 {
     uint8_t rx;
     uint8_t input_type = uart0_get_input_type();
+    struct ringbuf *rbr = uart_get_rx_ringbuf(&bc);
 
     if (input_type == RX_USER) {
         parse_user_input();
     } else {
         // read the entire ringbuffer and send to zmodem parser
-        while (ringbuf_get(&uart0_rbrx, &rx)) {
+        while (ringbuf_get(rbr, &rx)) {
             zrx_byte(rx);
         }
     }
@@ -135,9 +136,9 @@ void check_events(void)
     uint16_t ev;
 
     // uart RX
-    if (uart0_get_event() & UART0_EV_RX) {
+    if (uart_get_event(&bc) & UART_EV_RX) {
         msg |= SYS_MSG_UART0_RX;
-        uart0_rst_event();
+        uart_rst_event(&bc);
     }
     // timer_a0
     ev = timer_a0_get_event();
@@ -200,18 +201,18 @@ void prepare_signal(void)
 
     // perform checks on FRAM data
     if (replay_hdr->version != VER_REPLAY) {
-        uart0_print("wrong version\r\n");
+        uart_print(&bc, "wrong version\r\n");
         sig0_on;
         return;
     }
 
     if (replay_hdr->header_size + (replay_hdr->packet_count * replay_hdr->bytes_per_packet) != hdr->file_sz) {
-        uart0_print("stream length error\r\n");
+        uart_print(&bc, "stream length error\r\n");
         sig0_on;
         return;
     }
 
-    uart0_print("signal ok\r\n");
+    uart_print(&bc, "signal ok\r\n");
     valid_signal = 1;
 
     timer_a1_init(replay_hdr->clk_divider);
@@ -251,9 +252,11 @@ int main(void)
     timer_a1_init(CLK_DIV_64);  // main signal replication timer
     timer_a2_init();            // scheduler, systime()
 
-    uart_uca0_pin_init();
-    uart0_init();
-    uart0_set_rx_irq_handler(uart0_extra_irq_handler);
+    bc.baseAddress = EUSCI_A0_BASE;
+    bc.baudrate = BAUDRATE_57600;
+    uart_pin_init(&bc);
+    uart_init(&bc);
+    uart_set_rx_irq_handler(&bc, uart0_extra_irq_handler);
 
     // Disable the GPIO power-on default high-impedance mode to activate
     // previously configured port settings
@@ -265,8 +268,8 @@ int main(void)
     sig3_off;
     sig4_off;
 
-    eh_register(&uart0_rx_irq, SYS_MSG_UART0_RX);
-    //eh_register(&uart0_rx_irq, SYS_MSG_TIMERA0_CCR1);
+    eh_register(&uart_rx_irq, SYS_MSG_UART0_RX);
+    //eh_register(&uart_rx_irq, SYS_MSG_TIMERA0_CCR1);
     eh_register(&button_55_irq, SYS_MSG_P55_INT);
     eh_register(&button_56_irq, SYS_MSG_P56_INT);
 

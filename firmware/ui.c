@@ -7,30 +7,31 @@
 #include "proj.h"
 #include "glue.h"
 #include "timer_a2.h"
-#include "uart0.h"
 #include "ui.h"
 #include "version.h"
 #include "zmodem.h"
 #include "fram_glue.h"
 #include "timer_a1.h"
 #include "pg.h"
+#include "sig.h"
 
 extern const uint32_t HIGH_FRAM_START;
+extern uart_descriptor bc;
 
 void display_menu(void)
 {
     char itoa_buf[CONV_BASE_10_BUF_SZ];
-    uart0_print("\r\nsigdup build ");
-    uart0_print(_utoa(&itoa_buf[0], BUILD));
-    uart0_print("\r\n\r\ngeneric commands:\r\n\r\n");
-    uart0_print(" \e[33;1m?\e[0m    - show help\r\n");
-    //uart0_print(" \e[33;1mpa\e[0m   - parse HIFRAM\r\n");
-    //uart0_print(" \e[33;1mprep\e[0m - prepare signal\r\n");
-    uart0_print(" \e[33;1mgo\e[0m   - replay signal\r\n");
-    uart0_print(" \e[33;1mtest\e[0m - generate test signal\r\n");
-    uart0_print(" \e[33;1mread\e[0m - read HIFRAM\r\n");
-    uart0_print(" \e[33;1mpeek\e[0m - peek HIFRAM\r\n");
-    uart0_print(" \e[33;1msch\e[0m  - show schedule\r\n");
+    uart_print(&bc, "\r\nsigdup build ");
+    uart_print(&bc, _utoa(&itoa_buf[0], BUILD));
+    uart_print(&bc, "\r\n\r\ngeneric commands:\r\n\r\n");
+    uart_print(&bc, " \e[33;1m?\e[0m    - show help\r\n");
+    //uart_print(&bc, " \e[33;1mpa\e[0m   - parse HIFRAM\r\n");
+    //uart_print(&bc, " \e[33;1mprep\e[0m - prepare signal\r\n");
+    uart_print(&bc, " \e[33;1mgo\e[0m   - replay signal\r\n");
+    uart_print(&bc, " \e[33;1mtest\e[0m - generate test signal\r\n");
+    uart_print(&bc, " \e[33;1mread\e[0m - read HIFRAM\r\n");
+    uart_print(&bc, " \e[33;1mpeek\e[0m - peek HIFRAM\r\n");
+    uart_print(&bc, " \e[33;1msch\e[0m  - show schedule\r\n");
 }
 
 void display_schedule(void)
@@ -42,17 +43,17 @@ void display_schedule(void)
 
     for (c = 0; c < TIMER_A2_SLOTS_COUNT; c++) {
         timer_a2_get_trigger_slot(c, &trigger, &flag);
-        uart0_print(_utoa(itoa_buf, c));
-        uart0_print(" \t");
-        uart0_print(_utoa(itoa_buf, trigger));
-        uart0_print(" \t");
-        uart0_print(_utoa(itoa_buf, flag));
-        uart0_print("\r\n");
+        uart_print(&bc, _utoa(itoa_buf, c));
+        uart_print(&bc, " \t");
+        uart_print(&bc, _utoa(itoa_buf, trigger));
+        uart_print(&bc, " \t");
+        uart_print(&bc, _utoa(itoa_buf, flag));
+        uart_print(&bc, "\r\n");
     }
     trigger = timer_a2_get_trigger_next();
-    uart0_print("sch next ");
-    uart0_print(_utoa(itoa_buf, trigger));
-    uart0_print("\r\n");
+    uart_print(&bc, "sch next ");
+    uart_print(&bc, _utoa(itoa_buf, trigger));
+    uart_print(&bc, "\r\n");
 }
 
 void create_test_sig(void)
@@ -132,11 +133,11 @@ void parse_fram(void)
         next_sig = pkt_8ch->sig;
         next_ccr = pkt_8ch->ccr;
 
-        //uart0_print(" sig ");
-        //uart0_print(_utoh(itoa_buf, next_sig));
-        //uart0_print(" ccr ");
-        //uart0_print(_utoa(itoa_buf, next_ccr));
-        //uart0_print("\r\n");
+        //uart_print(&bc, " sig ");
+        //uart_print(&bc, _utoh(itoa_buf, next_sig));
+        //uart_print(&bc, " ccr ");
+        //uart_print(&bc, _utoa(itoa_buf, next_ccr));
+        //uart_print(&bc, "\r\n");
 
         test += next_sig + next_ccr;
 
@@ -144,7 +145,7 @@ void parse_fram(void)
     }
     sig0_off;
 
-    uart0_print(_utoa(itoa_buf, test));
+    uart_print(&bc, _utoa(itoa_buf, test));
 }
 
 void print_buf(uint8_t * data, const uint16_t size)
@@ -162,17 +163,17 @@ void print_buf(uint8_t * data, const uint16_t size)
             bytes_to_be_printed = bytes_remaining;
         }
 
-        uart0_print(_utoh16(itoa_buf, bytes_printed));
-        uart0_print(": ");
+        uart_print(&bc, _utoh16(itoa_buf, bytes_printed));
+        uart_print(&bc, ": ");
 
         for (i = 0; i < bytes_to_be_printed; i++) {
-            uart0_print(_utoh8(itoa_buf, data[bytes_printed + i]));
+            uart_print(&bc, _utoh8(itoa_buf, data[bytes_printed + i]));
             if (i & 0x1) {
-                uart0_print(" ");
+                uart_print(&bc, " ");
             }
         }
 
-        uart0_print("\r\n");
+        uart_print(&bc, "\r\n");
         bytes_printed += bytes_to_be_printed;
         bytes_remaining -= bytes_to_be_printed;
     }
@@ -194,17 +195,17 @@ void print_buf_fram(const uint32_t address, const uint32_t size)
             bytes_to_be_printed = bytes_remaining;
         }
 
-        uart0_print(_utoh32(itoa_buf, bytes_printed));
-        uart0_print(": ");
+        uart_print(&bc, _utoh32(itoa_buf, bytes_printed));
+        uart_print(&bc, ": ");
 
         for (i = 0; i < bytes_to_be_printed; i++) {
-            uart0_print(_utoh8(itoa_buf, *read_ptr++));
+            uart_print(&bc, _utoh8(itoa_buf, *read_ptr++));
             if (i & 0x1) {
-                uart0_print(" ");
+                uart_print(&bc, " ");
             }
         }
 
-        uart0_print("\r\n");
+        uart_print(&bc, "\r\n");
         bytes_printed += bytes_to_be_printed;
         bytes_remaining -= bytes_to_be_printed;
     }
@@ -235,12 +236,12 @@ void print_buf_ascii2mem(uint8_t * data, const uint16_t size)
 
         data_out = byte | nib;
 
-        uart0_tx_str((char *)&data_out, 1);
+        uart_tx_str(&bc, (char *)&data_out, 1);
 
         len--;
     }
 
-    uart0_print("\r\n");
+    uart_print(&bc, "\r\n");
 }
 
 void print_buf_array(uint8_t * data, const uint16_t size)
@@ -259,11 +260,11 @@ void print_buf_array(uint8_t * data, const uint16_t size)
         }
 
         for (i = 0; i < bytes_to_be_printed; i++) {
-            uart0_print(_utoh(itoa_buf, data[bytes_printed + i]));
-            uart0_print(", ");
+            uart_print(&bc, _utoh(itoa_buf, data[bytes_printed + i]));
+            uart_print(&bc, ", ");
         }
 
-        uart0_print("\r\n");
+        uart_print(&bc, "\r\n");
         bytes_printed += bytes_to_be_printed;
         bytes_remaining -= bytes_to_be_printed;
     }
@@ -271,8 +272,8 @@ void print_buf_array(uint8_t * data, const uint16_t size)
 
 void print_buf_native(uint8_t * data, const uint16_t size)
 {
-    uart0_tx_str((char *)data, size);
-    uart0_print("\r\n");
+    uart_tx_str(&bc, (char *)data, size);
+    uart_print(&bc, "\r\n");
 }
 
 #define PARSER_CNT 8
@@ -280,8 +281,8 @@ void print_buf_native(uint8_t * data, const uint16_t size)
 void parse_user_input(void)
 {
 
-#ifdef UART0_RX_USES_RINGBUF
-    //struct ringbuf *rbrx = uart0_get_rx_ringbuf();
+#if defined UART_RX_USES_RINGBUF
+    struct ringbuf *rbr = uart_get_rx_ringbuf(&bc);
     uint8_t rx;
     uint8_t c = 0;
     char input[PARSER_CNT];
@@ -289,16 +290,15 @@ void parse_user_input(void)
     memset(input, 0, PARSER_CNT);
 
     // read the entire ringbuffer
-    while (ringbuf_get(&uart0_rbrx, &rx)) {
-        if (c < PARSER_CNT - 1) {
+    while (ringbuf_get(rbr, &rx)) {
+        if (c < PARSER_CNT-1) {
             input[c] = rx;
         }
         c++;
     }
 #else
-    char *input = uart0_get_rx_buf();
+    char *input = uart_get_rx_buf(&bc);
 #endif
-
     char f = input[0];
     //uint16_t u16;
     //uint16_t i;
@@ -324,7 +324,7 @@ void parse_user_input(void)
         if (hdr->file_start == HIGH_FRAM_START + sizeof(fram_header)) {
             print_buf_fram(hdr->file_start, hdr->file_sz);
         } else {
-            uart0_print("no file present\r\n");
+            uart_print(&bc, "no file present\r\n");
         }
     }
 }

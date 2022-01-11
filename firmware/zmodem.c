@@ -17,8 +17,9 @@
 static int fdout;
 
 #else
+#include "glue.h"
 #include "proj.h"
-#include "uart0.h"
+#include "sig.h"
 #include "uart0_extras.h"
 #include "fram_glue.h"
 #include "lib_convert.h"
@@ -149,8 +150,9 @@ volatile uint8_t zmodem_last_event;
 void ztx_byte(uint8_t byte);
 #define zmodem_exit()
 #else
+extern uart_descriptor bc;
 #define ZDEBUG(...)
-#define ztx_byte(x) uart0_tx(x)
+#define ztx_byte(x) uart_tx(&bc, x)
 #define zmodem_exit() uart0_set_input_type(RX_USER)
 #endif
 
