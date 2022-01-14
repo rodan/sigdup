@@ -36,7 +36,7 @@ the source of the microcontroller firmware is located in the **./firmware** dire
 
 this firmware is fully interrupt-driven to ensure the (otherwise sleeping) uC is always ready to generate precise output on P3.x.
 
-it takes about 12us to wake up from the timer interrupt, get the signal packet from FRAM, set P3 and prepare the timer for the next transition. so this project is great for clocks up to 35kHz, a 57600 serial uart or any signal that does not have consecutive transitions faster then 12us. if at least one such hight frequency artefact is found in the input signal then a non-zero count of 'blk' (blackout) errors is reported during simulation and generation of output using that particular divider is not allowed.
+it takes up to about 10us to wake up from the timer interrupt, get the signal packet from FRAM, set P3 and prepare the timer for the next transition. so this project is great for clocks up to 50kHz, a 57600 serial uart or any signal that does not have consecutive transitions faster then 10us. if at least one such hight frequency artefact is found in the input signal then a non-zero count of 'blk' (blackout) errors is reported during simulation and generation of output using that particular divider is not allowed.
 
 ### Build requirements
 
