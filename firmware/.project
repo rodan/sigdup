@@ -26,7 +26,7 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>reference_libs_msp430</name>
+			<name>atlas430</name>
 			<type>2</type>
 			<location>/opt/atlas430</location>
 		</link>

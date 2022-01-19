@@ -56,12 +56,11 @@
 									<listOptionValue builtIn="false" value="FRAM_BASE=0x0140"/>
 									<listOptionValue builtIn="false" value="USE_XT1"/>
 									<listOptionValue builtIn="false" value="USE_XT2"/>
-									<listOptionValue builtIn="false" value="USE_UART0"/>
-									<listOptionValue builtIn="false" value="UART0_BAUD=57600"/>
-									<listOptionValue builtIn="false" value="UART0_RXBUF_SZ=128"/>
-									<listOptionValue builtIn="false" value="UART0_RX_USES_RINGBUF"/>
-									<listOptionValue builtIn="false" value="UART0_TXBUF_SZ=32"/>
-									<listOptionValue builtIn="false" value="UART0_TX_USES_IRQ"/>
+									<listOptionValue builtIn="false" value="UART_USES_UCA0"/>
+									<listOptionValue builtIn="false" value="UART_RXBUF_SZ=128"/>
+									<listOptionValue builtIn="false" value="UART_RX_USES_RINGBUF"/>
+									<listOptionValue builtIn="false" value="UART_TXBUF_SZ=32"/>
+									<listOptionValue builtIn="false" value="UART_TX_USES_IRQ"/>
 									<listOptionValue builtIn="false" value="FILE_MIN_SZ=0x3f"/>
 									<listOptionValue builtIn="false" value="FILE_MAX_SZ=0x33FF0"/>
 									<listOptionValue builtIn="false" value="HW_CRC16"/>
@@ -107,8 +106,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430FR57xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/hardware|reference_libs_msp430/tests|reference_libs_msp430/old_drivers|lnk_msp430fr5994.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="reference_libs_msp430/tests/clock_jitter/build"/>
+						<entry excluding="atlas430/driverlib/MSP430F5xx_6xx|atlas430/driverlib/MSP430FR2xx_4xx|atlas430/driverlib/MSP430FR57xx|atlas430/glue/MSP430F5xx_6xx|atlas430/glue/MSP430FR2xx_4xx|atlas430/glue/MSP430FR57xx|atlas430/tests|atlas430/old_drivers|lnk_msp430fr5994.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="atlas430/tests/clock_jitter/build"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -152,12 +151,11 @@
 									<listOptionValue builtIn="false" value="FRAM_BASE=0x0140"/>
 									<listOptionValue builtIn="false" value="USE_XT1"/>
 									<listOptionValue builtIn="false" value="USE_XT2"/>
-									<listOptionValue builtIn="false" value="USE_UART0"/>
-									<listOptionValue builtIn="false" value="UART0_BAUD=57600"/>
-									<listOptionValue builtIn="false" value="UART0_RXBUF_SZ=128"/>
-									<listOptionValue builtIn="false" value="UART0_RX_USES_RINGBUF"/>
-									<listOptionValue builtIn="false" value="UART0_TXBUF_SZ=32"/>
-									<listOptionValue builtIn="false" value="UART0_TX_USES_IRQ"/>
+									<listOptionValue builtIn="false" value="UART_USES_UCA0"/>
+									<listOptionValue builtIn="false" value="UART_RXBUF_SZ=128"/>
+									<listOptionValue builtIn="false" value="UART_RX_USES_RINGBUF"/>
+									<listOptionValue builtIn="false" value="UART_TXBUF_SZ=32"/>
+									<listOptionValue builtIn="false" value="UART_TX_USES_IRQ"/>
 									<listOptionValue builtIn="false" value="FILE_MIN_SZ=0x3f"/>
 									<listOptionValue builtIn="false" value="FILE_MAX_SZ=0x33FF0"/>
 									<listOptionValue builtIn="false" value="HW_CRC16"/>
@@ -232,8 +230,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="reference_libs_msp430/driverlib/MSP430FR57xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/tests|reference_libs_msp430/old_drivers|reference_libs_msp430/hardware|msp430fr5994.ld" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="reference_libs_msp430/tests/clock_jitter/build"/>
+						<entry excluding="atlas430/driverlib/MSP430FR57xx|atlas430/driverlib/MSP430FR2xx_4xx|atlas430/driverlib/MSP430F5xx_6xx|atlas430/glue/MSP430FR57xx|atlas430/glue/MSP430FR2xx_4xx|atlas430/glue/MSP430F5xx_6xx|atlas430/tests|atlas430/old_drivers|msp430fr5994.ld" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="atlas430/tests/clock_jitter/build"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -298,12 +296,11 @@
 									<listOptionValue builtIn="false" value="FRAM_BASE=0x0140"/>
 									<listOptionValue builtIn="false" value="USE_XT1"/>
 									<listOptionValue builtIn="false" value="USE_XT2"/>
-									<listOptionValue builtIn="false" value="USE_UART0"/>
-									<listOptionValue builtIn="false" value="UART0_BAUD=57600"/>
-									<listOptionValue builtIn="false" value="UART0_RXBUF_SZ=128"/>
-									<listOptionValue builtIn="false" value="UART0_RX_USES_RINGBUF"/>
-									<listOptionValue builtIn="false" value="UART0_TXBUF_SZ=32"/>
-									<listOptionValue builtIn="false" value="UART0_TX_USES_IRQ"/>
+									<listOptionValue builtIn="false" value="UART_USES_UCA0"/>
+									<listOptionValue builtIn="false" value="UART_RXBUF_SZ=128"/>
+									<listOptionValue builtIn="false" value="UART_RX_USES_RINGBUF"/>
+									<listOptionValue builtIn="false" value="UART_TXBUF_SZ=32"/>
+									<listOptionValue builtIn="false" value="UART_TX_USES_IRQ"/>
 									<listOptionValue builtIn="false" value="FILE_MIN_SZ=0x3f"/>
 									<listOptionValue builtIn="false" value="FILE_MAX_SZ=0x33FF0"/>
 									<listOptionValue builtIn="false" value="HW_CRC16"/>
@@ -339,7 +336,7 @@
 							<tool id="com.ti.ccstudio.buildDefinitions.MSP430_GNU_9.0.hex.1317998342" name="GNU Objcopy Utility" superClass="com.ti.ccstudio.buildDefinitions.MSP430_GNU_9.0.hex"/>
 						</toolChain>
 					</folderInfo>
-					<folderInfo id="com.ti.ccstudio.buildDefinitions.MSP430.Release.869751606.298373396" name="/" resourcePath="reference_libs_msp430">
+					<folderInfo id="com.ti.ccstudio.buildDefinitions.MSP430.Release.869751606.298373396" name="/" resourcePath="atlas430">
 						<toolChain id="com.ti.ccstudio.buildDefinitions.MSP430_GNU_9.0.exe.ReleaseToolchain.2088298438" name="TI Build Tools" superClass="com.ti.ccstudio.buildDefinitions.MSP430_GNU_9.0.exe.ReleaseToolchain" unusedChildren="">
 							<option id="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS.1007062602.1932760326" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS.1007062602"/>
 							<option id="com.ti.ccstudio.buildDefinitions.core.OPT_CODEGEN_VERSION.1276523419.1851429998" name="Compiler version" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_CODEGEN_VERSION.1276523419"/>
@@ -355,8 +352,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="reference_libs_msp430/tests|reference_libs_msp430/old_drivers|reference_libs_msp430/hardware|reference_libs_msp430/glue/MSP430FR57xx|reference_libs_msp430/glue/MSP430FR2xx_4xx|reference_libs_msp430/glue/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR2xx_4xx|reference_libs_msp430/driverlib/MSP430F5xx_6xx|reference_libs_msp430/driverlib/MSP430FR57xx|lnk_msp430fr5994.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="reference_libs_msp430/tests/clock_jitter/build"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="atlas430/tests/clock_jitter/build"/>
+						<entry excluding="build|atlas430/tests|atlas430/old_drivers|atlas430/glue/MSP430FR57xx|atlas430/glue/MSP430FR2xx_4xx|atlas430/glue/MSP430F5xx_6xx|atlas430/driverlib/MSP430FR2xx_4xx|atlas430/driverlib/MSP430F5xx_6xx|atlas430/driverlib/MSP430FR57xx|lnk_msp430fr5994.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
