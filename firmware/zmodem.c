@@ -114,30 +114,30 @@ struct {
     uint8_t buffer[BUFFER_SIZE+1];
 } zstate;
 
-#define STATE_IDLE                0
-#define STATE_HEADER              1
-#define STATE_HEADER_ZHEX         2
-#define STATE_HEADER_ZBIN         3
-#define STATE_HEADER_ZBIN32       4
-#define STATE_HEADER_ZHEX_CRC     5
-#define STATE_HEADER_ZBIN_CRC     6
-#define STATE_HEADER_ZBIN32_CRC   7
-#define STATE_HEADER_ZHEX_CRLF    8
-#define STATE_DATA_ZBIN           9
-#define STATE_DATA_ZBIN32        10
-#define STATE_DATA_ZBIN_ZCRCE    11
-#define STATE_DATA_ZBIN_ZCRCG    12
-#define STATE_DATA_ZBIN_ZCRCQ    13
-#define STATE_DATA_ZBIN_ZCRCW    14
-#define STATE_DATA_ZBIN32_ZCRCE  15
-#define STATE_DATA_ZBIN32_ZCRCG  16
-#define STATE_DATA_ZBIN32_ZCRCQ  17
-#define STATE_DATA_ZBIN32_ZCRCW  18
-#define STATE_FINISH             19
+#define ZMODEM_STATE_IDLE                0
+#define ZMODEM_STATE_HEADER              1
+#define ZMODEM_STATE_HEADER_ZHEX         2
+#define ZMODEM_STATE_HEADER_ZBIN         3
+#define ZMODEM_STATE_HEADER_ZBIN32       4
+#define ZMODEM_STATE_HEADER_ZHEX_CRC     5
+#define ZMODEM_STATE_HEADER_ZBIN_CRC     6
+#define ZMODEM_STATE_HEADER_ZBIN32_CRC   7
+#define ZMODEM_STATE_HEADER_ZHEX_CRLF    8
+#define ZMODEM_STATE_DATA_ZBIN           9
+#define ZMODEM_STATE_DATA_ZBIN32        10
+#define ZMODEM_STATE_DATA_ZBIN_ZCRCE    11
+#define ZMODEM_STATE_DATA_ZBIN_ZCRCG    12
+#define ZMODEM_STATE_DATA_ZBIN_ZCRCQ    13
+#define ZMODEM_STATE_DATA_ZBIN_ZCRCW    14
+#define ZMODEM_STATE_DATA_ZBIN32_ZCRCE  15
+#define ZMODEM_STATE_DATA_ZBIN32_ZCRCG  16
+#define ZMODEM_STATE_DATA_ZBIN32_ZCRCQ  17
+#define ZMODEM_STATE_DATA_ZBIN32_ZCRCW  18
+#define ZMODEM_STATE_FINISH             19
 
-#define PROTOSTATE_RX_IDLE           0
-#define PROTOSTATE_RX_WAIT           1
-#define PROTOSTATE_RX_TRANSFER       2
+#define PROTO_STATE_RX_IDLE           0
+#define PROTO_STATE_RX_WAIT           1
+#define PROTO_STATE_RX_TRANSFER       2
 
 volatile uint8_t zmodem_last_event;
 
@@ -228,8 +228,8 @@ void zmodem_reinit(void)
     zstate.active = false;
     zstate.zdlecount = 0;
     zstate.count = 0;
-    zstate.state = STATE_IDLE;
-    zstate.protostate = PROTOSTATE_RX_IDLE;
+    zstate.state = ZMODEM_STATE_IDLE;
+    zstate.protostate = PROTO_STATE_RX_IDLE;
     zstate.escape_ctrl = false;
     zstate.escape_bit8 = false;
     zstate.process_data = NULL;
@@ -309,8 +309,8 @@ void zmodem_send_zrinit(void)
 #endif
     zstate.active = true;
     zmodem_send_hex_header(ZRINIT, header);
-    zmodem_enter_state(STATE_IDLE);
-    zmodem_enter_protostate(PROTOSTATE_RX_WAIT);
+    zmodem_enter_state(ZMODEM_STATE_IDLE);
+    zmodem_enter_protostate(PROTO_STATE_RX_WAIT);
 }
 
 void zmodem_send_abort(void)
@@ -324,7 +324,7 @@ void zmodem_send_abort(void)
 
 void zmodem_process_zrqinit(void)
 {
-    if (zstate.protostate != PROTOSTATE_RX_IDLE)
+    if (zstate.protostate != PROTO_STATE_RX_IDLE)
         return;
 
     zmodem_send_zrinit();
@@ -333,8 +333,8 @@ void zmodem_process_zrqinit(void)
 void zmodem_process_zrinit(void)
 {
     /* XXX we're getting echoes back, something's gone wrong */
-    zmodem_enter_state(STATE_IDLE);
-    zmodem_enter_protostate(PROTOSTATE_RX_IDLE);
+    zmodem_enter_state(ZMODEM_STATE_IDLE);
+    zmodem_enter_protostate(PROTO_STATE_RX_IDLE);
 }
 
 void zmodem_process_zsinit_data(void)
@@ -346,7 +346,7 @@ void zmodem_process_zsinit_data(void)
         0
     };
 
-    if (zstate.protostate != PROTOSTATE_RX_WAIT)
+    if (zstate.protostate != PROTO_STATE_RX_WAIT)
         return;
 
     ZDEBUG("zsinit_data: %d\n", zstate.state);
@@ -364,20 +364,20 @@ void zmodem_process_zsinit_data(void)
 void zmodem_enter_data_state(void)
 {
     switch (zstate.state) {
-    case STATE_HEADER_ZHEX_CRLF:
-        zmodem_enter_state(STATE_DATA_ZBIN);
+    case ZMODEM_STATE_HEADER_ZHEX_CRLF:
+        zmodem_enter_state(ZMODEM_STATE_DATA_ZBIN);
         break;
-    case STATE_HEADER_ZBIN_CRC:
+    case ZMODEM_STATE_HEADER_ZBIN_CRC:
 #ifdef ZMODEM_O_BYTESIZE_CRC16
         crc16bs_start(0);
 #endif
-        zmodem_enter_state(STATE_DATA_ZBIN);
+        zmodem_enter_state(ZMODEM_STATE_DATA_ZBIN);
         break;
-    case STATE_HEADER_ZBIN32_CRC:
+    case ZMODEM_STATE_HEADER_ZBIN32_CRC:
 #ifdef ZMODEM_O_BYTESIZE_CRC32
         crc32bs_start(0);
 #endif
-        zmodem_enter_state(STATE_DATA_ZBIN32);
+        zmodem_enter_state(ZMODEM_STATE_DATA_ZBIN32);
         break;
     }
 }
@@ -385,7 +385,7 @@ void zmodem_enter_data_state(void)
 void zmodem_process_zsinit(void)
 {
     ZDEBUG("zsinit\n");
-    if (zstate.protostate != PROTOSTATE_RX_WAIT)
+    if (zstate.protostate != PROTO_STATE_RX_WAIT)
         return;
 
     ZDEBUG("zsinit working\n");
@@ -451,7 +451,7 @@ void zmodem_process_zfile_data(void)
     }
 
     if (zmodem_open_file((char *)zstate.buffer)) {
-        zmodem_enter_protostate(PROTOSTATE_RX_TRANSFER);
+        zmodem_enter_protostate(PROTO_STATE_RX_TRANSFER);
         zmodem_send_rpos();
     } else {
         ZDEBUG("! skipping \n");
@@ -463,7 +463,7 @@ void zmodem_process_zfile_data(void)
 
 void zmodem_process_zfile(void)
 {
-    if (zstate.protostate != PROTOSTATE_RX_WAIT)
+    if (zstate.protostate != PROTO_STATE_RX_WAIT)
         return;
 
     /* Ignore the conversion options
@@ -498,7 +498,7 @@ void zmodem_process_zabort(void)
 
 void zmodem_process_zfin(void)
 {
-    if (zstate.protostate != PROTOSTATE_RX_WAIT)
+    if (zstate.protostate != PROTO_STATE_RX_WAIT)
         return;
 
     uint8_t header[] = {
@@ -508,7 +508,7 @@ void zmodem_process_zfin(void)
         0
     };
     zmodem_send_hex_header(ZFIN, header);
-    zmodem_enter_state(STATE_FINISH);
+    zmodem_enter_state(ZMODEM_STATE_FINISH);
 }
 
 void zmodem_process_zrpos(void)
@@ -623,7 +623,7 @@ void zmodem_process_zdata_data(void)
         }
     } else {
         zmodem_send_rpos();
-        zmodem_enter_state(STATE_IDLE);
+        zmodem_enter_state(ZMODEM_STATE_IDLE);
     }
 }
 
@@ -632,7 +632,7 @@ void zmodem_process_zdata(void)
     uint32_t offset = ((uint32_t) zstate.header[1]) +
         ((uint32_t) zstate.header[2] << 8) + ((uint32_t) zstate.header[3] << 16) + ((uint32_t) zstate.header[4] << 24);
 
-    if (zstate.protostate != PROTOSTATE_RX_TRANSFER)
+    if (zstate.protostate != PROTO_STATE_RX_TRANSFER)
         return;
 
     if (offset == zstate.fileoffset) {
@@ -641,7 +641,7 @@ void zmodem_process_zdata(void)
     } else {
         zmodem_send_rpos();
         /* XXX do we maybe have to receive the ZDATA data first? */
-        zmodem_enter_state(STATE_IDLE);
+        zmodem_enter_state(ZMODEM_STATE_IDLE);
     }
 }
 
@@ -650,13 +650,13 @@ void zmodem_process_zeof(void)
     uint32_t offset = ((uint32_t) zstate.header[1]) +
         ((uint32_t) zstate.header[2] << 8) + ((uint32_t) zstate.header[3] << 16) + ((uint32_t) zstate.header[4] << 24);
 
-    if (zstate.protostate != PROTOSTATE_RX_TRANSFER)
+    if (zstate.protostate != PROTO_STATE_RX_TRANSFER)
         return;
 
     ZDEBUG("EOF: %u, %u\n", offset, zstate.fileoffset);
 
     if (offset != zstate.fileoffset) {
-        zmodem_enter_state(STATE_IDLE);
+        zmodem_enter_state(ZMODEM_STATE_IDLE);
         return;
     }
 
@@ -691,7 +691,7 @@ void zmodem_process_zcan(void)
     ZDEBUG("Abort sequence received\n");
     zstate.zdlecount = 0;
     zmodem_send_abort();
-    zmodem_enter_state(STATE_IDLE);
+    zmodem_enter_state(ZMODEM_STATE_IDLE);
 }
 
 void zmodem_process_zfreecnt(void)
@@ -791,10 +791,10 @@ void zmodem_process_header(void)
 
 void zmodem_timeout(void)
 {
-    if (zstate.protostate == PROTOSTATE_RX_IDLE)
+    if (zstate.protostate == PROTO_STATE_RX_IDLE)
         return;
 
-    if (zstate.state == STATE_FINISH) {
+    if (zstate.state == ZMODEM_STATE_FINISH) {
         zmodem_reinit();
         return;
     }
@@ -806,7 +806,7 @@ void zmodem_timeout(void)
         return;
     }
 
-    if (zstate.protostate == PROTOSTATE_RX_TRANSFER && zstate.timeouts == 1) {
+    if (zstate.protostate == PROTO_STATE_RX_TRANSFER && zstate.timeouts == 1) {
         zmodem_send_rpos();
         return;
     }
@@ -815,7 +815,7 @@ void zmodem_timeout(void)
      * here. We'll end up back at the start anyway, and the counter can count
      * up from there until we abort the whole session.
      */
-    if (zstate.protostate == PROTOSTATE_RX_TRANSFER)
+    if (zstate.protostate == PROTO_STATE_RX_TRANSFER)
         zstate.timeouts = 0;
 
     zmodem_send_zrinit();
@@ -910,32 +910,32 @@ void zmodem_process_data(uint8_t ok)
     zstate.ok = ok;
 
     switch (zstate.state) {
-    case STATE_DATA_ZBIN_ZCRCE:
-    case STATE_DATA_ZBIN32_ZCRCE:
-        zmodem_enter_state(STATE_IDLE);
+    case ZMODEM_STATE_DATA_ZBIN_ZCRCE:
+    case ZMODEM_STATE_DATA_ZBIN32_ZCRCE:
+        zmodem_enter_state(ZMODEM_STATE_IDLE);
         break;
-    case STATE_DATA_ZBIN_ZCRCG:
+    case ZMODEM_STATE_DATA_ZBIN_ZCRCG:
 #ifdef ZMODEM_O_BYTESIZE_CRC16
         crc16bs_start(0);
 #endif
-        zmodem_enter_state(STATE_DATA_ZBIN);
+        zmodem_enter_state(ZMODEM_STATE_DATA_ZBIN);
         break;
-    case STATE_DATA_ZBIN32_ZCRCG:
+    case ZMODEM_STATE_DATA_ZBIN32_ZCRCG:
 #ifdef ZMODEM_O_BYTESIZE_CRC32
         crc32bs_start(0);
 #endif
-        zmodem_enter_state(STATE_DATA_ZBIN32);
+        zmodem_enter_state(ZMODEM_STATE_DATA_ZBIN32);
         break;
-    case STATE_DATA_ZBIN_ZCRCQ:
-    case STATE_DATA_ZBIN32_ZCRCQ:
-        zmodem_enter_state(STATE_IDLE);
+    case ZMODEM_STATE_DATA_ZBIN_ZCRCQ:
+    case ZMODEM_STATE_DATA_ZBIN32_ZCRCQ:
+        zmodem_enter_state(ZMODEM_STATE_IDLE);
         break;
-    case STATE_DATA_ZBIN_ZCRCW:
-    case STATE_DATA_ZBIN32_ZCRCW:
-        zmodem_enter_state(STATE_IDLE);
+    case ZMODEM_STATE_DATA_ZBIN_ZCRCW:
+    case ZMODEM_STATE_DATA_ZBIN32_ZCRCW:
+        zmodem_enter_state(ZMODEM_STATE_IDLE);
         break;
     default:
-        zmodem_enter_state(STATE_IDLE);
+        zmodem_enter_state(ZMODEM_STATE_IDLE);
         break;
     }
     if (zstate.process_data != NULL)
@@ -959,9 +959,9 @@ void zrx_byte(uint8_t byte)
             zstate.header[0] = ZCAN;
             zmodem_process_header();
         }
-        if (zstate.count && zstate.state == STATE_IDLE) {
+        if (zstate.count && zstate.state == ZMODEM_STATE_IDLE) {
             zstate.zdlecount = 0;
-            zmodem_enter_state(STATE_HEADER);
+            zmodem_enter_state(ZMODEM_STATE_HEADER);
         }
     } else {
         if (zstate.zdlecount) {
@@ -979,33 +979,33 @@ void zrx_byte(uint8_t byte)
             }
         }
         switch (zstate.state) {
-        case STATE_IDLE:
+        case ZMODEM_STATE_IDLE:
             if (byte == ZPAD)
                 zstate.count++;
             else
                 zstate.count = 0;
             break;
-        case STATE_HEADER:
+        case ZMODEM_STATE_HEADER:
             switch (byte) {
             case ZHEX:
-                zmodem_enter_state(STATE_HEADER_ZHEX);
+                zmodem_enter_state(ZMODEM_STATE_HEADER_ZHEX);
                 break;
             case ZBIN:
-                zmodem_enter_state(STATE_HEADER_ZBIN);
+                zmodem_enter_state(ZMODEM_STATE_HEADER_ZBIN);
                 break;
             case ZBIN32:
-                zmodem_enter_state(STATE_HEADER_ZBIN32);
+                zmodem_enter_state(ZMODEM_STATE_HEADER_ZBIN32);
                 break;
             default:
                 zmodem_send_znak();
-                zmodem_enter_state(STATE_IDLE);
+                zmodem_enter_state(ZMODEM_STATE_IDLE);
                 break;
             }
             break;
-        case STATE_HEADER_ZHEX:
+        case ZMODEM_STATE_HEADER_ZHEX:
             if (!isxdigit(byte)) {
                 zmodem_send_znak();
-                zmodem_enter_state(STATE_IDLE);
+                zmodem_enter_state(ZMODEM_STATE_IDLE);
             }
             byte = hexdecode(byte);
             if (zstate.count & 1)
@@ -1014,12 +1014,12 @@ void zrx_byte(uint8_t byte)
                 zstate.header[zstate.count / 2] = byte << 4;
             zstate.count++;
             if (zstate.count >= 10)
-                zmodem_enter_state(STATE_HEADER_ZHEX_CRC);
+                zmodem_enter_state(ZMODEM_STATE_HEADER_ZHEX_CRC);
             break;
-        case STATE_HEADER_ZHEX_CRC:
+        case ZMODEM_STATE_HEADER_ZHEX_CRC:
             if (!isxdigit(byte)) {
                 zmodem_send_znak();
-                zmodem_enter_state(STATE_IDLE);
+                zmodem_enter_state(ZMODEM_STATE_IDLE);
             }
             byte = hexdecode(byte);
             if (zstate.count & 1)
@@ -1028,9 +1028,9 @@ void zrx_byte(uint8_t byte)
                 zstate.crc[zstate.count / 2] = byte << 4;
             zstate.count++;
             if (zstate.count >= 4)
-                zmodem_enter_state(STATE_HEADER_ZHEX_CRLF);
+                zmodem_enter_state(ZMODEM_STATE_HEADER_ZHEX_CRLF);
             break;
-        case STATE_HEADER_ZHEX_CRLF:
+        case ZMODEM_STATE_HEADER_ZHEX_CRLF:
             if (zstate.count == 0 && (byte & 0x7f) == '\r') {
                 zstate.count++;
                 break;
@@ -1043,21 +1043,21 @@ void zrx_byte(uint8_t byte)
                     zmodem_process_header();
                 } else {
                     zmodem_send_znak();
-                    zmodem_enter_state(STATE_IDLE);
+                    zmodem_enter_state(ZMODEM_STATE_IDLE);
                 }
                 break;
             }
             zmodem_send_znak();
-            zmodem_enter_state(STATE_IDLE);
+            zmodem_enter_state(ZMODEM_STATE_IDLE);
             break;
-        case STATE_HEADER_ZBIN:
-        case STATE_HEADER_ZBIN32:
+        case ZMODEM_STATE_HEADER_ZBIN:
+        case ZMODEM_STATE_HEADER_ZBIN32:
             zstate.header[zstate.count++] = byte;
             if (zstate.count >= 5)
                 zmodem_enter_state((zstate.state ==
-                                    STATE_HEADER_ZBIN32) ? STATE_HEADER_ZBIN32_CRC : STATE_HEADER_ZBIN_CRC);
+                                    ZMODEM_STATE_HEADER_ZBIN32) ? ZMODEM_STATE_HEADER_ZBIN32_CRC : ZMODEM_STATE_HEADER_ZBIN_CRC);
             break;
-        case STATE_HEADER_ZBIN_CRC:
+        case ZMODEM_STATE_HEADER_ZBIN_CRC:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 2) {
                 uint16_t crc = zcrc16(zstate.header, 5, 0);
@@ -1067,11 +1067,11 @@ void zrx_byte(uint8_t byte)
                     zmodem_process_header();
                 } else {
                     zmodem_send_znak();
-                    zmodem_enter_state(STATE_IDLE);
+                    zmodem_enter_state(ZMODEM_STATE_IDLE);
                 }
             }
             break;
-        case STATE_HEADER_ZBIN32_CRC:
+        case ZMODEM_STATE_HEADER_ZBIN32_CRC:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 4) {
                 uint32_t crc = zcrc32(zstate.header, 5, 0);
@@ -1081,14 +1081,14 @@ void zrx_byte(uint8_t byte)
                     zmodem_process_header();
                 } else {
                     zmodem_send_znak();
-                    zmodem_enter_state(STATE_IDLE);
+                    zmodem_enter_state(ZMODEM_STATE_IDLE);
                 }
             }
             break;
-        case STATE_DATA_ZBIN:
-        case STATE_DATA_ZBIN32:
+        case ZMODEM_STATE_DATA_ZBIN:
+        case ZMODEM_STATE_DATA_ZBIN32:
 #ifdef ZMODEM_O_BYTESIZE_WRITE
-            if ((zstate.count < BUFFER_SIZE) && (zstate.protostate != PROTOSTATE_RX_TRANSFER)) {
+            if ((zstate.count < BUFFER_SIZE) && (zstate.protostate != PROTO_STATE_RX_TRANSFER)) {
 #else
             if (zstate.count < BUFFER_SIZE) {
 #endif
@@ -1104,7 +1104,7 @@ void zrx_byte(uint8_t byte)
                     keep_byte = 0;
 #endif
                     zmodem_enter_state((zstate.state ==
-                                        STATE_DATA_ZBIN32) ? STATE_DATA_ZBIN32_ZCRCE : STATE_DATA_ZBIN_ZCRCE);
+                                        ZMODEM_STATE_DATA_ZBIN32) ? ZMODEM_STATE_DATA_ZBIN32_ZCRCE : ZMODEM_STATE_DATA_ZBIN_ZCRCE);
                     break;
                 case ZCRCG:
                     zstate.datalen = zstate.count - 1;
@@ -1113,7 +1113,7 @@ void zrx_byte(uint8_t byte)
                     keep_byte = 0;
 #endif
                     zmodem_enter_state((zstate.state ==
-                                        STATE_DATA_ZBIN32) ? STATE_DATA_ZBIN32_ZCRCG : STATE_DATA_ZBIN_ZCRCG);
+                                        ZMODEM_STATE_DATA_ZBIN32) ? ZMODEM_STATE_DATA_ZBIN32_ZCRCG : ZMODEM_STATE_DATA_ZBIN_ZCRCG);
                     break;
                 case ZCRCQ:
                     zstate.datalen = zstate.count - 1;
@@ -1122,7 +1122,7 @@ void zrx_byte(uint8_t byte)
                     keep_byte = 0;
 #endif
                     zmodem_enter_state((zstate.state ==
-                                        STATE_DATA_ZBIN32) ? STATE_DATA_ZBIN32_ZCRCQ : STATE_DATA_ZBIN_ZCRCQ);
+                                        ZMODEM_STATE_DATA_ZBIN32) ? ZMODEM_STATE_DATA_ZBIN32_ZCRCQ : ZMODEM_STATE_DATA_ZBIN_ZCRCQ);
                     break;
                 case ZCRCW:
                     zstate.datalen = zstate.count - 1;
@@ -1131,7 +1131,7 @@ void zrx_byte(uint8_t byte)
                     keep_byte = 0;
 #endif
                     zmodem_enter_state((zstate.state ==
-                                        STATE_DATA_ZBIN32) ? STATE_DATA_ZBIN32_ZCRCW : STATE_DATA_ZBIN_ZCRCW);
+                                        ZMODEM_STATE_DATA_ZBIN32) ? ZMODEM_STATE_DATA_ZBIN32_ZCRCW : ZMODEM_STATE_DATA_ZBIN_ZCRCW);
                     break;
                 default:
 
@@ -1142,7 +1142,7 @@ void zrx_byte(uint8_t byte)
 #if defined(ZMODEM_O_BYTESIZE_CRC32) || defined(ZMODEM_O_BYTESIZE_CRC16)
             if (keep_byte) {
 #ifdef ZMODEM_O_BYTESIZE_WRITE
-                if (zstate.protostate == PROTOSTATE_RX_TRANSFER) {
+                if (zstate.protostate == PROTO_STATE_RX_TRANSFER) {
 #ifdef HOST
                     write(fdout, &byte, 1); 
 #else
@@ -1151,7 +1151,7 @@ void zrx_byte(uint8_t byte)
 #endif
                 }
 #endif
-                if (zstate.state == STATE_DATA_ZBIN32) {
+                if (zstate.state == ZMODEM_STATE_DATA_ZBIN32) {
                     crc32bs_upd(byte);
                 } else {
                     crc16bs_upd(byte);
@@ -1159,10 +1159,10 @@ void zrx_byte(uint8_t byte)
             }
 #endif
             break;
-        case STATE_DATA_ZBIN_ZCRCE:
-        case STATE_DATA_ZBIN_ZCRCG:
-        case STATE_DATA_ZBIN_ZCRCQ:
-        case STATE_DATA_ZBIN_ZCRCW:
+        case ZMODEM_STATE_DATA_ZBIN_ZCRCE:
+        case ZMODEM_STATE_DATA_ZBIN_ZCRCG:
+        case ZMODEM_STATE_DATA_ZBIN_ZCRCQ:
+        case ZMODEM_STATE_DATA_ZBIN_ZCRCW:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 2) {
 #ifdef ZMODEM_O_BYTESIZE_CRC16
@@ -1192,10 +1192,10 @@ void zrx_byte(uint8_t byte)
                 zmodem_process_data(crc == rxcrc);
             }
             break;
-        case STATE_DATA_ZBIN32_ZCRCE:
-        case STATE_DATA_ZBIN32_ZCRCG:
-        case STATE_DATA_ZBIN32_ZCRCQ:
-        case STATE_DATA_ZBIN32_ZCRCW:
+        case ZMODEM_STATE_DATA_ZBIN32_ZCRCE:
+        case ZMODEM_STATE_DATA_ZBIN32_ZCRCG:
+        case ZMODEM_STATE_DATA_ZBIN32_ZCRCQ:
+        case ZMODEM_STATE_DATA_ZBIN32_ZCRCW:
             zstate.crc[zstate.count++] = byte;
             if (zstate.count >= 4) {
 #ifdef ZMODEM_O_BYTESIZE_CRC32
@@ -1230,7 +1230,7 @@ void zrx_byte(uint8_t byte)
                 zmodem_process_data(crc == rxcrc);
             }
             break;
-        case STATE_FINISH:
+        case ZMODEM_STATE_FINISH:
             if (byte == 'O')
                 zstate.count++;
             else
@@ -1241,7 +1241,7 @@ void zrx_byte(uint8_t byte)
             }
             break;
         default:
-            zmodem_enter_state(STATE_IDLE);
+            zmodem_enter_state(ZMODEM_STATE_IDLE);
             break;
         }
         zstate.zdlecount = 0;

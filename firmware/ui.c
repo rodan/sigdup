@@ -115,7 +115,7 @@ void parse_fram(void)
     uint32_t stream_start; /// FRAM address where the stream starts
     uint32_t stream_end;   /// FRAM address where the stream ends
 
-    uint8_t next_sig = 0;
+    uint8_t next_sig = 0; //ACTIVE_BIT;
     uint16_t next_ccr = 0;
 
     replay_packet_8ch_t *pkt_8ch;

@@ -47,7 +47,7 @@ void timer_a1_init(const uint8_t clk_divider)
 {
 
     __disable_interrupt();
-    *stream_pos = 0;
+    stream_pos = 0;
     stream_end = 0;
     switch (clk_divider) {
         case CLK_DIV_1:
