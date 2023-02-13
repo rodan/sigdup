@@ -31,7 +31,7 @@ J.7 - XT2
 UCA0 - uart0 backchannel console (P2.0 TXD, P2.1 RXD)
 UCA1 - unused (P2.5 P2.6)
 UCA2 - unusable (P5.4 unrouted, P5.5 button, P5.6 button, P5.7)
-UCA3 - uart3 edge interface (P6.0 P6.1)
+UCA3 - unused (P6.0 P6.1)
 UCB0 - sdcard (P1.6 MOSI, P1.7 MISO, P2.2 CLK, P4.0 CS)
 UCB1 - spi ext (P5.0 MOSI, P5.1 MISO, P5.2 CLK, P5.3 ?)
 UCB2 - i2c ext (P7.0, P7.1)
