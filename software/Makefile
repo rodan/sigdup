@@ -15,29 +15,28 @@ include Makefile.inc
 CFLAGS_REL	 += -Os -fdata-sections -ffunction-sections -fomit-frame-pointer
 LDFLAGS_REL	 += -Wl,-s
 CFLAGS_DBG	 += -O1 -ggdb
-LDFLAGS_DBG	 += 
+LDFLAGS_DBG	 +=
 
-DEBUG := $(shell grep "^\#define CONFIG_DEBUG" config.h)
+DEBUG := $(shell grep "^#define CONFIG_DEBUG" config.h)
 ifeq ($(DEBUG),)
 TARGET	:= RELEASE
-CFLAGS	+= $(CFLAGS_REL)
-LDFLAGS	+= $(LDFLAGS_REL)
+TARGET_CFLAGS	+= $(CFLAGS_REL)
+TARGET_LDFLAGS	+= $(LDFLAGS_REL)
 else
 TARGET	:= DEBUG
-CFLAGS	+= $(CFLAGS_DBG)
-LDFLAGS	+= $(LDFLAGS_DBG)
+TARGET_CFLAGS	+= $(CFLAGS_DBG)
+TARGET_LDFLAGS	+= $(LDFLAGS_DBG)
 endif
 
-COVERITY_SCAN_TOKEN := $(shell cat ../.secrets.COVERITY_SCAN_TOKEN)
+COVERITY_SCAN_TOKEN := $(shell cat ../.secrets.COVERITY_SCAN_TOKEN 2>/dev/null)
 
 .PHONY: all
 .PHONY: clean
 .PHONY: tags
 .PHONY: lib
 
-
-all : lib version.h $(EXOUTPUT) tags
-
+all : version.h $(EXOUTPUT) tags
+$(EXOUTPUT) : lib
 lib : $(TLPI_LIB)
 
 version.h: $(SRC)
@@ -49,18 +48,18 @@ $(TLPI_LIB): force_look
 
 %.o: %.c
 	@echo -e " * $(@F)"
-	@$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+	@$(CC) $(INCLUDES) $(TARGET_CFLAGS) -c $< -o $@
 
 $(EXOUTPUT): $(LOCAL_OBJECTS) $(EXOBJECT)
 	@echo -e "\n>> Building $@ as target $(TARGET)"
-	@$(CC) $(LDFLAGS) -lzip $(LOCAL_OBJECTS) $(TLPI_LIB) -o $@ && size $@
+	@$(CC) $(TARGET_LDFLAGS) -lzip $(LOCAL_OBJECTS) $(TLPI_LIB) -o $@ && size $@
 
 $(EXOBJECT): $(PROJ_SRC)
-	@$(CC) $(INCLUDES) $(CFLAGS) -g -c $< -o $@
+	@$(CC) $(INCLUDES) $(TARGET_CFLAGS) -g -c $< -o $@
 
 allgen : ${GEN_EXE}
 
-clean : 
+clean :
 	@${RM} ${EXE} *.o ${PROJ} tags ${TLPI_LIB}
 	@${RM} -rf cov-int
 
