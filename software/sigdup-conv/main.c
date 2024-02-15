@@ -15,14 +15,12 @@
 #include <zip.h>
 
 #include "version.h"
-#include "config.h"
 #include "tlpi_hdr.h"
 #include "saleae_api.h"
 
 #define          BUF_SIZE  1024000
 #define     OPMODE_NORMAL  0x01
 #define    OPMODE_ANALYZE  0x02
-
 
 void show_usage(void);
 void show_version(void);

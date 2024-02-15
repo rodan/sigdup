@@ -21,8 +21,8 @@ LDFLAGS_REL	 += -Wl,-s
 CFLAGS_DBG	 += -O1 -ggdb -DNDEBUG # -pg
 LDFLAGS_DBG	 += # -pg
 
-MANDATORY_CFLAGS=-fPIC -pedantic -Wall -Wextra -Wno-sign-compare -Wa,-ahl=$(@:.o=.s) -fopenmp
-MANDATORY_LDFLAGS=-lzip -fopenmp
+MANDATORY_CFLAGS=-fPIC -pedantic -Wall -Wextra -Wno-sign-compare -Wa,-ahl=$(@:.o=.s)
+MANDATORY_LDFLAGS=-lzip
 
 DEBUG := $(shell grep "^#define CONFIG_DEBUG" config.h)
 ifeq ($(DEBUG),)
@@ -47,7 +47,7 @@ libs : $(LIBS_OBJ)
 $(EXOUTPUT) : libs version.h
 
 version.h: $(SRC)
-	@./tools/setver.sh
+	@../scripts/setver.sh
 
 build/lib/tlpi/%.o: ${TLPI_DIR}/%.c
 	@bash ../lib/tlpi-lib/Build_ename.sh > ../lib/tlpi-lib/ename.c.inc
@@ -92,7 +92,7 @@ coverity: clean clean-lib
 	@curl --form token=$(COVERITY_SCAN_TOKEN) \
 	  --form email=2b4eda@subdimension.ro \
 	  --form file=@/tmp/$(PROJ).tgz \
-	  --form version="$(shell ./tools/getver.sh -i ./version.h -t MAJ.MINbBUILD)" \
+	  --form version="$(shell ../scripts/getver.sh -i ./version.h -t MAJ.MINbBUILD)" \
 	  --form description="Description" \
 	  https://scan.coverity.com/builds?project=rodan%2Fthpp
 

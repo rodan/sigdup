@@ -1,8 +1,8 @@
-
 #ifndef __SALEAE_API_H__
 #define __SALEAE_API_H__
 
-#define MAX_CHANNELS  16
+#define      MAX_CHANNELS  16
+#define   SAMPLING_ERR_NS  3
 
 // version 0 of the saleae binary header
 struct __attribute__((packed)) saleae_bh0 {
@@ -17,15 +17,18 @@ struct __attribute__((packed)) saleae_bh0 {
 
 typedef struct saleae_bh0 saleae_bh0_t;
 
-/**
+struct saleae_channel {
+    saleae_bh0_t hdr;   // header
+    uint64_t *ts;       // picosecond timestamps
+    uint64_t *dts;      // differential timestamps
+    uint8_t *raw;
+    size_t raw_len;
+};
 
- tt transition time
- */
+typedef struct saleae_channel saleae_channel_t;
+
 struct saleae_context {
-    char *data[MAX_CHANNELS];
-    size_t data_len[MAX_CHANNELS];
-    saleae_bh0_t *hdr[MAX_CHANNELS];
-    double *tt[MAX_CHANNELS];
+    saleae_channel_t ch[MAX_CHANNELS];
     uint64_t loaded_channels;
 };
 
