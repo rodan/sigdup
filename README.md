@@ -5,6 +5,38 @@
        src="https://scan.coverity.com/projects/23935/badge.svg"/>
 </a>
 
+# this project has moved to [codeberg](https://codeberg.org/subDIMENSION/sigdup). see you there.
+
+the github repository will be removed on the 14th of March 2025.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## sigdup
 
 This project converts logic signals captured via [sigrok](https://www.sigrok.org/) or [pulseview](https://www.sigrok.org/wiki/PulseView) (.sr files), allows the user to select the channels of interest and finally reproduces the signals on the P3.0-P3.7 pins of an [MSP-EXP430FR5994 development board](https://www.ti.com/tool/MSP-EXP430FR5994). currently signals slower than 50kHz are supported.
