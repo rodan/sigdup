@@ -5,7 +5,7 @@
 #include "proj.h"
 #include "driverlib.h"
 #include "fram_glue.h"
-#include "glue.h"
+#include "atlas430.h"
 
 #if defined (__TI_COMPILER_VERSION__)
 #pragma PERSISTENT(HIGH_FRAM_START)

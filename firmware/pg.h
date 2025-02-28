@@ -80,8 +80,8 @@ typedef struct {
     uint8_t bytes_per_packet;   /// number of bytes for each packet
     uint8_t block_size;         /// defined as 1 for 8channels, 2 for 16channels
     uint8_t clk_divider;        /// timer divider
-    uint16_t data_checksum;     /// crc16 hash for all the data packets
-    uint16_t header_checksum;   /// crc16 hash for replay_header_t
+    //uint16_t data_checksum;     /// crc16 hash for all the data packets
+    //uint16_t header_checksum;   /// crc16 hash for replay_header_t
 } __attribute__((__packed__)) replay_header_t;
 
 typedef struct {

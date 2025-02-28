@@ -5,7 +5,7 @@
 #include <inttypes.h>
 
 #include "proj.h"
-#include "glue.h"
+#include "atlas430.h"
 #include "timer_a2.h"
 #include "ui.h"
 #include "version.h"
@@ -62,7 +62,7 @@ void create_test_sig(void)
     uint16_t c;
 
     fram_header fram_hdr;
-    replay_header_t replay_hdr;
+    replay_header_t replay_hdr = { 0 };
     replay_packet_8ch_t pkt;
 
     fram_hdr.file_sz = sizeof(replay_hdr) + (pkt_cnt * sizeof(replay_packet_8ch_t));

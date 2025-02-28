@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
     struct zip_file *zf;
     struct zip_stat sb;
     int err;
+    zip_error_t error;
     int len;
     int fd;
     long long sum;
@@ -229,8 +230,8 @@ int main(int argc, char *argv[])
     }
 
     if ((za = zip_open(infile, 0, &err)) == NULL) {
-        zip_error_to_str(buf, sizeof(buf), err, errno);
-        fprintf(stderr, "can't open zip archive `%s': %s/n", infile, buf);
+        zip_error_init_with_code(&error, err);
+        fprintf(stderr, "can't open zip archive `%s': %s/n", infile, zip_error_strerror(&error));
         return 1;
     }
 

@@ -17,7 +17,7 @@
 static int fdout;
 
 #else
-#include "glue.h"
+#include "atlas430.h"
 #include "proj.h"
 #include "sig.h"
 #include "uart0_extras.h"
@@ -528,26 +528,25 @@ uint8_t zmodem_file_write(void)
 #if defined(USE_LFS)
     err = lfs_file_write(zstate.lfs, zstate.lfs_file, zstate.buffer, zstate.datalen);
 #elif defined(HOST)
-#ifndef ZMODEM_O_BYTESIZE_WRITE
+    #ifndef ZMODEM_O_BYTESIZE_WRITE
     err = write(fdout, zstate.buffer, zstate.datalen);
-#else
+    #else
     err = 0;
-#endif
+    #endif
 #else
+    // we are on bare metal hardware
+    #ifndef ZMODEM_O_BYTESIZE_WRITE
+    // FRAM
+    fram_write(zstate.buffer, zstate.datalen);
+    #else
+    err = 0;
+    #endif
+#endif
 
 #ifndef ZMODEM_O_BYTESIZE_WRITE
-    // FRAM
-    err = fram_write(zstate.buffer, zstate.datalen);
-    if (err == zstate.datalen) {
-        err = 0;
-    }
-#else
-    err = 0;
-#endif
-#endif
-
     if (err < 0)
         return false;
+#endif
     return true;
 }
 

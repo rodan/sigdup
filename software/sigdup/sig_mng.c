@@ -246,6 +246,7 @@ int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t 
     uint32_t timer_ticks_remain;        /// number of ticks still needed to be packaged for the current edge
     uint32_t timer_ticks_replayed = 0;  /// total number of timer ticks packaged until now
     uint32_t timer_ticks_temp;
+    uint32_t safe_ovf;  /// coverity complains about the obvious and normal overflow. make it stop.
     double rsampling_int;
 
     input_edge_t *edgep;
@@ -280,7 +281,9 @@ int8_t generate_replay(replay_header_t * hdr, list_t * replay_ll, const uint8_t 
                 re = (replay_ll_t *) calloc(1, sizeof(replay_ll_t));
                 re->pkt = rp;
 
-                rp->ccr = timer_ticks_replayed + timer_ticks_temp;
+                // ccr is normal to overflow
+                safe_ovf = (timer_ticks_replayed + timer_ticks_temp) & 0xffff;
+                rp->ccr = safe_ovf;
                 rp->sig = edgep->sig;
                 list_add(*replay_ll, re);
             }

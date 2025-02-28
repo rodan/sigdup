@@ -13,7 +13,7 @@
 #include "pg.h"
 #include "proj.h"
 #include "driverlib.h"
-#include "glue.h"
+#include "atlas430.h"
 #include "uart0_extras.h"
 #include "ui.h"
 #include "timer_a0.h"

@@ -21,7 +21,7 @@ non-mandatory options:
 Example use:
 
 # replay all content of the 8 channel qa/20s_100mHz.sr capture:
- ./sigdup -i qa/20s_100mHz.sr -o /tmp/upload.bin
+ ./sigdup -i ../qa/20s_100mHz.sr -o /tmp/upload.bin
   input file contains 8 channels sampled at 1 MHz, sampling interval of 1.000000 µs, mask is 0xffff
     number of chunks: 2, total size: 20000000 bytes
    div     min error       max error       avg err         blk     pkts    score  
@@ -49,7 +49,7 @@ Example use:
  
 # take a 16channel capture in which we're interested in only channels 8 and 9
 # mask off (1 << 8) + (1 << 9) == 0x0300, right shift result by 8 and extract the lower 8 bits as signal data
-# ./sigdup -i qa/16ch_1MHz.sr -o /tmp/upload.bin -r 8 -m 0300
+# ./sigdup -i ../qa/16ch_1MHz.sr -o /tmp/upload.bin -r 8 -m 0300
   input file contains 16 channels sampled at 1 MHz, sampling interval of 1.000000 µs, mask is 0x0300
     number of chunks: 1, total size: 1145774 bytes
    div     min error       max error       avg err         blk     pkts    score  

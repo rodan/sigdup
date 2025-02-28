@@ -106,7 +106,7 @@ void timer_a2_scheduler_handler(void)
 {
     uint16_t c;
     uint16_t shift;
-    uint32_t schedule_trigger_next = 0;
+    uint32_t schedule_trigger_next = 0xffffffff;
 
     if (timer_a2_trigger_schedule) {
         for (c = 0; c < TIMER_A2_SLOTS_COUNT; c++) {

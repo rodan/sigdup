@@ -4,7 +4,7 @@
 #include <string.h>
 #include "driverlib.h"
 #include "zmodem.h"
-#include "glue.h"
+#include "atlas430.h"
 #include "uart0_extras.h"
 #include "timer_a0.h"
 #include "sig.h"
